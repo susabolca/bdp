@@ -1,0 +1,79 @@
+<div data-v-446853f1="" class="open-body__right markdown-body"><div data-v-e39afd5e="" data-v-446853f1="" class="document"><h3 id="商家支付回调接口">商家支付回调接口</h3>
+<p>url</p>
+<pre><code class="language-shell">POST http://callback_url</code></pre>
+<p>回调参数说明</p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>uid</td>
+<td>string</td>
+<td>百度用户ID</td>
+</tr>
+<tr>
+<td>order_id</td>
+<td>string</td>
+<td>百度网盘订单号</td>
+</tr>
+<tr>
+<td>third_order_id</td>
+<td>string</td>
+<td>业务方订单号</td>
+</tr>
+<tr>
+<td>pay_no</td>
+<td>string</td>
+<td>支付流水号</td>
+</tr>
+<tr>
+<td>pay_time</td>
+<td>int</td>
+<td>支付时间</td>
+</tr>
+<tr>
+<td>ts</td>
+<td>int</td>
+<td>当前时间戳</td>
+</tr>
+<tr>
+<td>sign</td>
+<td>string</td>
+<td>签名参数(对以上参数按照sign算法进行签名校验)</td>
+</tr>
+</tbody></table>
+<p>响应示例</p>
+<pre><code class="language-json">{
+  "errmsg": "success",
+  "errno": 0,
+}</code></pre>
+<p>sign签名算法</p>
+<p>多个字段升序排序，按<code>"$k=$v&amp;"</code>方式拼接，最后拼上<code>"key=$seckey"</code>，整体使用SHA-256进行签名。</p>
+<p>php语言计算签名代码</p>
+<pre><code class="language-php">/** 
+*   @param array $fields: 签名字段数组
+*       $fields = array(
+*           "uid" =&gt; "123",
+*           "order_id" =&gt; "456",
+*           ...
+*       );
+*   @param string $secKey：向平台申请的密钥
+**/ 
+public static function sign($fields, $secKey){
+    if (!is_array($fields) || empty($fields)) {
+        return "";
+    }
+    ksort($fields);
+    $strTmp = '';
+    foreach ($fields as $k =&gt; $v) {
+        $strTmp .= $k . '=' . $v . '&amp;';
+    }
+    $key = "key=" . $secKey;
+    $strTmp .= $key;
+    return hash_hmac("sha256", $strTmp, $secKey);
+}</code></pre>
+</div></div>

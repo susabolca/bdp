@@ -1,0 +1,271 @@
+<div data-v-446853f1="" class="open-body__right markdown-body"><div data-v-e39afd5e="" data-v-446853f1="" class="document"><p>网盘小程序和手百小程序使用同一框架。为了对小程序的权限进行控制，网盘自定了一些scope，如下：</p>
+<table>
+<thead>
+<tr>
+<th>scope</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>pcs_doc_read_write</td>
+<td>读写网盘文档、文件列表</td>
+</tr>
+<tr>
+<td>pcs_pic_rw</td>
+<td>读写您百度网盘图片资源</td>
+</tr>
+<tr>
+<td>pcs_video_rw</td>
+<td>读写您百度网盘视频资源</td>
+</tr>
+<tr>
+<td>pcs_audio_rw</td>
+<td>读写您百度网盘音频资源</td>
+</tr>
+<tr>
+<td>pcs_app_rw</td>
+<td>读写您百度网盘应用资源</td>
+</tr>
+</tbody></table>
+<h3 id="接入流程">接入流程</h3>
+<p>1、去<a href="%5Bhttps://smartprogram.baidu.com%5D(https://smartprogram.baidu.com/)"><font color="blue">百度智能小程序平台</font></a>注册应用，详见<a href="https://smartprogram.baidu.com/docs/introduction/enter_application/"><font color="blue">智能小程序注册指导文档</font></a></p>
+<p>2、开发者发送鉴权邮件，邮件格式如下：</p>
+<pre><code class="language-shell">收件人：mars-union@baidu.com
+邮件主题：内部API开通鉴权申请-小程序名称-小程序APPID
+邮件内容：
+小程序信息：小程序名称+APPID
+需要鉴权的scope列表：
+业务接口人：
+业务对接部门：
+使用场景描述：
+预估收益：
+
+</code><p><code class="language-shell">例：
+邮件主题：内部API开通鉴权申请-扫描-14<strong>82
+邮件内容：
+小程序信息：扫描-14</strong>82
+需要鉴权的scope列表：pcs_pic_rw
+业务接口人：严<em>*
+业务对接部门：</em>
+使用场景描述：应用到扫描小程序中，提供图片扫描文字等相关功能
+预估收益：***w pv</code></p></pre><p></p>
+<p>3、小程序调用SwanCore的api (swan.authorize) 传入网盘scope参数，获取访问用户网盘数据授权</p>
+<p>4、小程序调用swan.login取得授权码code</p>
+<p>5、小程序通过code2token接口换取access_token</p>
+<p>code2token接口由小程序开发者server端自行实现，内部调用<font color="blue"><a href="http://openapi.baidu.com/nalogin/code2token">http://openapi.baidu.com/nalogin/code2token</a></font>实现access_token的获取。</p>
+<p>接口参数</p>
+<table>
+<thead>
+<tr>
+<th>参数名</th>
+<th>是否必须</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>code</td>
+<td>是</td>
+<td>通过上面第一步所获得的Authorization Code</td>
+</tr>
+<tr>
+<td>client_id</td>
+<td>是</td>
+<td>智能小程序的App Key</td>
+</tr>
+<tr>
+<td>sk</td>
+<td>是</td>
+<td>智能小程序的App Secret</td>
+</tr>
+</tbody></table>
+<h3 id="代码示例">代码示例</h3>
+<h4 id="swanauthorize">swan.authorize</h4>
+<pre><code class="language-shell">swan.authorize({
+     scope: 'pcs_pic_rw',
+     success: function (res) {
+         swan.login({
+             success: function (res) {
+                swan.request({
+                 url: 'https://code2token接口',
+                 method: 'GET',
+                 data: {
+                     code: res.code,
+                     client_id: 'xxxxxxxx',
+                 },
+                 success:function(data){
+                 //从data中获取token
+                 },
+                 fail:function(){}
+                });
+             },
+             fail: function (err) {
+                 console.log('登陆失败', err);
+             }
+         });
+     },
+     fail: function (err) {
+         console.log(err, 'auth-fail');
+     }
+ });</code></pre>
+<h4 id="code2token">code2token</h4>
+<pre><code class="language-shell">1、请求
+curl -X POST "http://openapi.baidu.com/nalogin/code2token"  -d 'client_id=123&amp;sk=456&amp;code=7a8a7941ec877d25af7be341e04abac7'
+
+</code><p><code class="language-shell">2、响应
+{
+  "openid": "mE1X4nXnGw4IgKMmYXpHX_IYQe",
+  "session_key": "5e6a9eac2dfd043bfc91c3e905fa4821",
+  "token": {
+    "expires_in": 2592000,
+    "refresh_token": "22.8349ff7613add1a5ec58b8d28ec750d0.315360000.1871276124.3344746846-15262859",
+    "access_token": "21.05744f8121f2575e5d1894bf8524358c.2592000.1558508124.3344746846-15262859",
+    "scope": "snsapi_base pcs_pic_rw"
+  }
+}</code></p></pre><p></p>
+<h4 id="使用access_token">使用access_token</h4>
+<pre><code class="language-shell">swan.request({
+  url: 'https://pan.baidu.com/rest/2.0/xpan/multimedia?method=filemetas&amp;access_token=' + token,(上面获取到的token)
+    method: 'GET',
+    dataType: 'json',
+    data: {},
+    header: {
+        'content-type': 'application/json', // 默认值
+    },
+    success(res) {
+       //解析网盘数据，业务处理
+    },
+    fail(err){}</code></pre>
+<h3 id="获取文件参数">获取文件参数</h3>
+<p>app.js中的onShow生命周期方法中，解析参数获取</p>
+<pre><code class="language-shell">onShow(event){
+    //单选时为fileInfo，多选时为files，包含的key有，path,size,fsId,timestamp
+    let fileInfo = event.query.fileInfo &amp;&amp; JSON.parse(event.query.fileInfo);//单选时获取
+    let files = event.query.files &amp;&amp; JSON.parse(event.query.files);//多选时获取
+    console.log(fileInfo，files)
+}</code></pre>
+<h3 id="扩展能力接口">扩展能力接口</h3>
+<pre><code class="language-shell">function secondCallback(args) {
+    swan.showModal({
+        title: '二级回调',
+        content: JSON.stringify(args),
+        cancelColor: '#999999',
+        confirmColor: '#0099cc',
+        success: function (res) {
+            if (res.confirm) {
+                console.log('用户点击了确定');
+            } else if (res.cancel) {
+                console.log('用户点击了取消');
+            }
+        }
+    });
+}
+swan.netdisk.selectFile({maxSelectedNum: 2}, secondCallback)
+     .then(res =&gt; {
+         swan.showToast({
+             title: '一级回调',
+             duration: 2000
+         });
+     })</code></pre>
+<p>更多使用方法，参考<a href="https://pan.baidu.com/union/document/smartProgram"><font color="blue">网盘小程序接口文档</font></a></p>
+<h3 id="不同入口进入的场景处理">不同入口进入的场景处理</h3>
+<p>区别在于九宫格进入没有携带文件/图片信息，需要小程序自己内部逻辑区别处理，
+小程序每次被调起(onshow)的时候，全局的onshow生命周期中都会读取到首次初始化的参数，若小程序内部有场景转换，例如更改文件/图片资源，则需要判断处理下。</p>
+<h3 id="附录">附录</h3>
+<p>每个scope能访问的接口列表是有限的，如下表所示。</p>
+<table>
+<thead>
+<tr>
+<th>scope</th>
+<th>接口</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>pcs_doc_read_write</td>
+<td>/rest/2.0/xpan/file?method=list</td>
+</tr>
+<tr>
+<td></td>
+<td>/rest/2.0/xpan/file?method=doclist</td>
+</tr>
+<tr>
+<td></td>
+<td>/rest/2.0/xpan/file?method=precreate</td>
+</tr>
+<tr>
+<td></td>
+<td>/rest/2.0/xpan/file?method=create</td>
+</tr>
+<tr>
+<td></td>
+<td>/rest/2.0/xpan/multimedia?method=filemetas</td>
+</tr>
+<tr>
+<td></td>
+<td>rest/2.0/xpan/share?method=set</td>
+</tr>
+<tr>
+<td></td>
+<td>/rest/2.0/xpan/share?method=transfer</td>
+</tr>
+<tr>
+<td></td>
+<td>/rest/2.0/xpan/nas?method=uinfo</td>
+</tr>
+<tr>
+<td>pcs_pic_rw</td>
+<td>/rest/2.0/xpan/device?method=register</td>
+</tr>
+<tr>
+<td></td>
+<td>/rest/2.0/xpan/device?method=bind</td>
+</tr>
+<tr>
+<td></td>
+<td>/rest/2.0/xpan/device?method=unbind</td>
+</tr>
+<tr>
+<td></td>
+<td>/rest/2.0/xpan/device?method=diff</td>
+</tr>
+<tr>
+<td></td>
+<td>/rest/2.0/xpan/file?method=list</td>
+</tr>
+<tr>
+<td></td>
+<td>/rest/2.0/xpan/multimedia?method=selectlist</td>
+</tr>
+<tr>
+<td></td>
+<td>/rest/2.0/xpan/multimedia?method=additem</td>
+</tr>
+<tr>
+<td></td>
+<td>/rest/2.0/xpan/multimedia?method=itemlist</td>
+</tr>
+<tr>
+<td></td>
+<td>/rest/2.0/xpan/multimedia?method=delitem</td>
+</tr>
+<tr>
+<td></td>
+<td>/rest/2.0/xpan/multimedia?method=filemetas</td>
+</tr>
+<tr>
+<td></td>
+<td>/rest/2.0/xpan/file?method=list</td>
+</tr>
+<tr>
+<td></td>
+<td>/rest/2.0/xpan/file?method=precreate</td>
+</tr>
+<tr>
+<td></td>
+<td>/rest/2.0/xpan/file?method=create</td>
+</tr>
+<tr>
+<td></td>
+<td>/rest/2.0/xpan/nas?method=uinfo</td>
+</tr>
+</tbody></table>
+</div></div>

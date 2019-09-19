@@ -1,0 +1,939 @@
+<div data-v-446853f1="" class="open-body__right markdown-body"><div data-v-e39afd5e="" data-v-446853f1="" class="document"><h2 id="接入流程">接入流程</h2>
+<p><img src="http://issuecdn.baidupcs.com/issue/netdisk/tu/openplatform/nas_introduction.png" alt="使用介绍"></p>
+<p>NAS服务和其他服务在授权流程上有所不同</p>
+<p>1、获取授权code</p>
+<p>2、使用code换取access_token</p>
+<p>获取授权code请参考<a href="https://pan.baidu.com/union/document/entrance"><font color="blue">开放平台接入文档</font></a>，使用code换取access_token请参考如下接口。</p>
+<p><strong>获取access_token</strong></p>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">POST https://pan.baidu.com/rest/2.0/xpan/nas?method=token</code></pre>
+<p><strong>请求参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>code</td>
+<td>string</td>
+<td>是</td>
+<td>用户授权后得到的code</td>
+</tr>
+<tr>
+<td>client_id</td>
+<td>string</td>
+<td>是</td>
+<td>应用的API Key</td>
+</tr>
+<tr>
+<td>redirect_uri</td>
+<td>string</td>
+<td>是</td>
+<td><strong>该值必须与获取Authorization  Code时传递的“redirect_uri”保持一致。</strong></td>
+</tr>
+</tbody></table>
+<p><strong>响应参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>access_token</td>
+<td>string</td>
+<td>授权凭证</td>
+</tr>
+</tbody></table>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell">curl "https://pan.baidu.com/rest/2.0/xpan/nas?method=token&amp;code=b3b920bdeb2244cf2f4bb6d9ef2ca176&amp;&amp;client_id=123" -d "redirect_uri=oob" -H "User-Agent: pan.baidu.com"</code></pre>
+<p><strong>响应示例</strong></p>
+<pre><code class="language-json">{
+  "access_token": "123",
+  "errmsg": "succ",
+  "errno": 0,
+  "request_id": "4180735204253093984"
+}</code></pre>
+<p><strong>错误码说明</strong></p>
+<table>
+<thead>
+<tr>
+<th>错误码</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>42614</td>
+<td>授权code不合法</td>
+</tr>
+</tbody></table>
+<h2 id="通用参数">通用参数</h2>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>clienttype</td>
+<td>int</td>
+<td>是</td>
+<td>客户端类型，具体值线下提供</td>
+</tr>
+<tr>
+<td>channel</td>
+<td>string</td>
+<td>是</td>
+<td>客户端名称，具体值线下提供</td>
+</tr>
+<tr>
+<td>access_token</td>
+<td>string</td>
+<td>是</td>
+<td>授权凭证</td>
+</tr>
+<tr>
+<td>device_id</td>
+<td>string</td>
+<td>是</td>
+<td>设备ID，设备注册接口下发</td>
+</tr>
+</tbody></table>
+<p>备注：</p>
+<p>1、所有接口都要带</p>
+<p>2、通用参数必须放在URL里</p>
+<h2 id="通用错误码">通用错误码</h2>
+<table>
+<thead>
+<tr>
+<th>错误码</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>42650</td>
+<td>用户和设备未绑定</td>
+</tr>
+<tr>
+<td>42651</td>
+<td>获取天工通道数据失败</td>
+</tr>
+<tr>
+<td>42652</td>
+<td>设备未连接硬盘</td>
+</tr>
+</tbody></table>
+<p>备注：每个接口都有可能返回通用错误码</p>
+<h2 id="接口列表">接口列表</h2>
+<h3 id="获取硬件设备上的文件列表">获取硬件设备上的文件列表</h3>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">GET https://pan.baidu.com/rest/2.0/xpan/nas?method=list</code></pre>
+<p><strong>请求参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>path</td>
+<td>string</td>
+<td>是</td>
+<td>以 / 开头的绝对路径</td>
+</tr>
+<tr>
+<td>fs_id</td>
+<td>uint64</td>
+<td>是</td>
+<td>固定值，传1</td>
+</tr>
+<tr>
+<td>start</td>
+<td>uint32</td>
+<td>否</td>
+<td>起始位置， 默认从0开始</td>
+</tr>
+<tr>
+<td>limit</td>
+<td>uint32</td>
+<td>否</td>
+<td>每页条目数，上限100，默认100</td>
+</tr>
+</tbody></table>
+<p><strong>响应参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>path</td>
+<td>string</td>
+<td>文件或目录绝对路径</td>
+</tr>
+<tr>
+<td>file_name</td>
+<td>string</td>
+<td>文件名</td>
+</tr>
+<tr>
+<td>fs_id</td>
+<td>uint64</td>
+<td>文件或目录标记</td>
+</tr>
+<tr>
+<td>size</td>
+<td>unit64</td>
+<td>文件大小(单位字节) ，目录暂为0</td>
+</tr>
+<tr>
+<td>is_dir</td>
+<td>uint8</td>
+<td>0为文件；1为目录</td>
+</tr>
+<tr>
+<td>category</td>
+<td>unit8</td>
+<td>文件类型，1 视频、2 音频、3 图片、4 文档、5 应用、6 其他、7 种子</td>
+</tr>
+<tr>
+<td>mtime</td>
+<td>unit64</td>
+<td>时间戳，文件或目录最近一次修改时间</td>
+</tr>
+<tr>
+<td>has_more</td>
+<td>unit8</td>
+<td>是否还有下页信息，1有，0无</td>
+</tr>
+<tr>
+<td>count</td>
+<td>uint64</td>
+<td>path路径下文件总数，测试用，不保证准确性</td>
+</tr>
+</tbody></table>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell">curl "https://pan.baidu.com/rest/2.0/xpan/nas?method=list&amp;clienttype=123&amp;channel=123&amp;access_token=123&amp;device_id=456&amp;path=/tmp&amp;fs_id=1" -H "User-Agent: pan.baidu.com"</code></pre>
+<p><strong>响应示例</strong></p>
+<pre><code class="language-json">{
+  "count": 3,
+  "errmsg": "succ",
+  "errno": 0,
+  "has_more": 0,
+  "list": [
+    {
+      "category": 6,
+      "file_name": "北京彩色打印机添加工具.app",
+      "fs_id": 1,
+      "is_dir": 1,
+      "mtime": 1516335288,
+      "path": "/tmp/北京彩色打印机添加工具.app",
+      "size": 102
+    },
+    {
+      "category": 6,
+      "file_name": "北京黑白打印机添加工具.app.zip",
+      "fs_id": 1,
+      "is_dir": 0,
+      "mtime": 1541809954,
+      "path": "/tmp/北京黑白打印机添加工具.app.zip",
+      "size": 1598621
+    },
+    {
+      "category": 6,
+      "file_name": "北京彩色打印机添加工具.app.zip",
+      "fs_id": 1,
+      "is_dir": 0,
+      "mtime": 1541809943,
+      "path": "/tmp/北京彩色打印机添加工具.app.zip",
+      "size": 1598656
+    }
+  ],
+  "request_id": "673133001311598277"
+}</code></pre>
+<p><strong>错误码说明</strong></p>
+<table>
+<thead>
+<tr>
+<th>错误码</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>42658</td>
+<td>天工通道错误</td>
+</tr>
+</tbody></table>
+<h3 id="获取硬件设备容量信息">获取硬件设备容量信息</h3>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">GET https://pan.baidu.com/rest/2.0/xpan/nas?method=quota</code></pre>
+<p><strong>响应参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>total_size</td>
+<td>uint64</td>
+<td>总大小，单位B</td>
+</tr>
+<tr>
+<td>used_size</td>
+<td>uint64</td>
+<td>已使用大小，单位B</td>
+</tr>
+</tbody></table>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell">curl "https://pan.baidu.com/rest/2.0/xpan/nas?method=quota&amp;clienttype=123&amp;channel=123&amp;access_token=123&amp;device_id=456" -H "User-Agent: pan.baidu.com"</code></pre>
+<p><strong>响应示例</strong></p>
+<pre><code class="language-json">{
+  "errmsg": "succ",
+  "errno": 0,
+  "request_id": "908611783728631773",
+  "total_size": 209715200,
+  "used_size": 104857600
+}</code></pre>
+<h3 id="新建上传任务">新建上传任务</h3>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">POST https://pan.baidu.com/rest/2.0/xpan/nas?method=upload</code></pre>
+<p>备注：</p>
+<p>1、第三方需提前向网盘申请写权限</p>
+<p>2、当前任务数(等待任务数 + 暂停任务数 + 正在上传任务数)，上限1000</p>
+<p><strong>请求参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>target_path</td>
+<td>string</td>
+<td>是</td>
+<td>网盘存储目录</td>
+</tr>
+<tr>
+<td>list</td>
+<td>json array</td>
+<td>是</td>
+<td>任务列表，上限100</td>
+</tr>
+</tbody></table>
+<p>list内容</p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>path</td>
+<td>string</td>
+<td>是</td>
+<td>上传文件路径(相对于硬盘的路径)</td>
+</tr>
+<tr>
+<td>filesize</td>
+<td>uint64</td>
+<td>是</td>
+<td>文件大小，单位B</td>
+</tr>
+</tbody></table>
+<p><strong>响应参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>succ_count</td>
+<td>int</td>
+<td>添加成功的任务数</td>
+</tr>
+<tr>
+<td>list</td>
+<td>json array</td>
+<td>创建成功的任务列表</td>
+</tr>
+</tbody></table>
+<p>list内容</p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>path</td>
+<td>string</td>
+<td>对应请求中的path参数</td>
+</tr>
+<tr>
+<td>task_id</td>
+<td>uint64</td>
+<td>任务ID</td>
+</tr>
+</tbody></table>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell"># 云端文件路径：/tmp/DSC01218.JPG、/tmp/DSC01217.JPG
+curl "https://pan.baidu.com/rest/2.0/xpan/nas?
+method=upload&amp;clienttype=123&amp;channel=123&amp;access_token=123&amp;device_id=456" -d 'target_path=/tmp&amp;list=[{"path":"/shantoulei_358/DSC01218.JPG","filesize":1368130},{"path":"/shantoulei_358/DSC01217.JPG","filesize":1345921}]' -H "User-Agent: pan.baidu.com"</code></pre>
+<p><strong>响应示例</strong></p>
+<pre><code class="language-json">{
+  "errmsg": "succ",
+  "errno": 0,
+  "request_id": "1133501656803446701",
+  "succ_count": 2
+}</code></pre>
+<p><strong>错误码说明</strong></p>
+<table>
+<thead>
+<tr>
+<th>错误码</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>42610</td>
+<td>网盘容量已满</td>
+</tr>
+<tr>
+<td>42611</td>
+<td>上传任务数超限</td>
+</tr>
+<tr>
+<td>42620</td>
+<td>部分任务添加失败</td>
+</tr>
+</tbody></table>
+<h3 id="bt和磁力链解析">bt和磁力链解析</h3>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">POST https://pan.baidu.com/rest/2.0/xpan/nas?method=querysinfo</code></pre>
+<p><strong>请求参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>type</td>
+<td>int</td>
+<td>是</td>
+<td>2 bt、4 磁力链</td>
+</tr>
+<tr>
+<td>source_path</td>
+<td>string</td>
+<td>否</td>
+<td>type=2时，对应bt种子文件在网盘中路径<br>type=4时，对应磁力链地址</td>
+</tr>
+</tbody></table>
+<p><strong>响应参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>key</th>
+<th>type</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>list</td>
+<td>array</td>
+<td>返回bt种子或者磁力链中文件列表</td>
+</tr>
+<tr>
+<td>sha1</td>
+<td>string</td>
+<td>bt类型才返回</td>
+</tr>
+<tr>
+<td>file_name</td>
+<td>string</td>
+<td>种子中的文件名</td>
+</tr>
+<tr>
+<td>size</td>
+<td>uint64</td>
+<td>种子中文件大小</td>
+</tr>
+</tbody></table>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell">curl "https://pan.baidu.com/rest/2.0/xpan/nas?method=query_sinfo&amp;access_token=123" -d "type=4&amp;source_path=/test.torrent" -H "User-Agent: pan.baidu.com"</code></pre>
+<p><strong>响应示例</strong></p>
+<pre><code class="language-json">{
+  "list": [
+    {
+      "file_name": "肖申克的救赎.rmvb",
+      "size": 1934284752
+    }
+  ],
+  "errno": 0,
+  "errmsg": "",
+  "sha1": "xxx",
+  "request_id": 5762153669872759000
+}</code></pre>
+<p><strong>错误码说明</strong></p>
+<table>
+<thead>
+<tr>
+<th>错误码</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>42607</td>
+<td>解析失败</td>
+</tr>
+</tbody></table>
+<h3 id="新建下载任务">新建下载任务</h3>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">POST https://pan.baidu.com/rest/2.0/xpan/nas?method=download</code></pre>
+<p>备注：当前任务数(等待任务数 + 暂停任务数 + 正在下载任务数)，上限100</p>
+<p><strong>请求参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>type</td>
+<td>int</td>
+<td>是</td>
+<td>下载文件类型：2 网盘文件、3 bt、4 磁力链、5 http/https</td>
+</tr>
+<tr>
+<td>fs_ids</td>
+<td>json array</td>
+<td>否</td>
+<td>type=2时此参数必选，上限100</td>
+</tr>
+<tr>
+<td>source_path</td>
+<td>string</td>
+<td>否</td>
+<td>type=3时，对应bt文件在网盘中路径<br>type=4时，对应磁力链地址<br>type=5时，对应http(s)下载地址</td>
+</tr>
+<tr>
+<td>selected_idx</td>
+<td>string</td>
+<td>否</td>
+<td>下载bt种子/magnet解析后勾选的文件编号（逗号隔开的数字字符串，e.g. '1,2,3'），最多100个, 序号从1开始</td>
+</tr>
+<tr>
+<td>sha1</td>
+<td>string</td>
+<td>否</td>
+<td>下载源bt种子的特征码，type=3时必需</td>
+</tr>
+<tr>
+<td>task_name</td>
+<td>string</td>
+<td>否</td>
+<td>任务名称，type=4时必需</td>
+</tr>
+<tr>
+<td>save_path</td>
+<td>string</td>
+<td>否</td>
+<td>保存到nas设备路径<br>type=2时，默认值为"/来自：百度网盘"<br>type=5时，默认值为"/远程下载"</td>
+</tr>
+</tbody></table>
+<p><strong>响应参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>succ_count</td>
+<td>int</td>
+<td>添加成功的任务数</td>
+</tr>
+<tr>
+<td>list</td>
+<td>json array</td>
+<td>创建成功的任务列表，请求参数type=2时有效</td>
+</tr>
+</tbody></table>
+<p>list内容</p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>fs_id</td>
+<td>uint64</td>
+<td>文件ID</td>
+</tr>
+<tr>
+<td>path</td>
+<td>string</td>
+<td>文件在网盘中的路径</td>
+</tr>
+<tr>
+<td>task_id</td>
+<td>uint64</td>
+<td>任务ID</td>
+</tr>
+</tbody></table>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell"># type=2
+curl "https://pan.baidu.com/rest/2.0/xpan/nas?method=download&amp;clienttype=123&amp;channel=123&amp;access_token=123&amp;device_id=456" -d 'type=2&amp;fs_ids=[70919975072139,1087164050273156]' -H "User-Agent: pan.baidu.com"
+# type=5
+curl "https://pan.baidu.com/rest/2.0/xpan/nas?method=download&amp;clienttype=123&amp;channel=123&amp;access_token=123&amp;device_id=456" -d 'type=5&amp;source_path=https://a48823c7ec3cf4539564-60c534a1284a12ce74ef84032e9b4e46.ssl.cf1.rackcdn.com/Cyberduck-6.8.3.29107.zip' -H "User-Agent: pan.baidu.com"</code></pre>
+<p><strong>响应示例</strong></p>
+<pre><code class="language-json">{
+  "errmsg": "succ",
+  "errno": 0,
+  "list": [
+    {
+      "fs_id": 493450796249986,
+      "path": "/baidu/video/IMG_1981.mp4",
+      "task_id": 21554090250000304
+    }
+  ],
+  "request_id": "4224011519590589381",
+  "succ_count": 3
+}</code></pre>
+<p><strong>错误码说明</strong></p>
+<table>
+<thead>
+<tr>
+<th>错误码</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>42601</td>
+<td>设备容量已满</td>
+</tr>
+<tr>
+<td>42603</td>
+<td>下载任务数超限</td>
+</tr>
+<tr>
+<td>42605</td>
+<td>批量文件数超限</td>
+</tr>
+<tr>
+<td>42606</td>
+<td>远程下载任务添加失败</td>
+</tr>
+</tbody></table>
+<h3 id="查询试用提速状态">查询试用提速状态</h3>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">GET https://pan.baidu.com/rest/2.0/xpan/nas?method=speedstatus</code></pre>
+<p><strong>响应参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>could_experience</td>
+<td>int</td>
+<td>是否能试用，1可以， 0 不可以</td>
+</tr>
+<tr>
+<td>freq_cnt</td>
+<td>int</td>
+<td>剩余试用次数</td>
+</tr>
+<tr>
+<td>duration</td>
+<td>int</td>
+<td>单次提速总时长，单位秒</td>
+</tr>
+</tbody></table>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell">curl "https://pan.baidu.com/rest/2.0/xpan/nas?method=speedstatus&amp;clienttype=123&amp;channel=123&amp;access_token=123&amp;device_id=456" -H "User-Agent: pan.baidu.com"</code></pre>
+<p><strong>响应示例</strong></p>
+<pre><code class="language-json">{
+  "could_experience": 1,
+  "duration": 120,
+  "errmsg": "succ",
+  "errno": 0,
+  "freq_cnt": 3,
+  "request_id": "2082738740926918238"
+}</code></pre>
+<h3 id="试用提速">试用提速</h3>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">GET https://pan.baidu.com/rest/2.0/xpan/nas?method=speed</code></pre>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell">curl "https://pan.baidu.com/rest/2.0/xpan/nas?method=speed&amp;clienttype=123&amp;channel=123&amp;access_token=123&amp;device_id=456" -H "User-Agent: pan.baidu.com"</code></pre>
+<p><strong>错误码说明</strong></p>
+<table>
+<thead>
+<tr>
+<th>错误码</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>42612</td>
+<td>试用提速机会已用完</td>
+</tr>
+</tbody></table>
+<h3 id="获取任务列表">获取任务列表</h3>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">GET https://pan.baidu.com/rest/2.0/xpan/nas?method=progress</code></pre>
+<p>备注：</p>
+<p>1、返回数据不保证一定有序</p>
+<p>2、当前任务，只返回添加最早的100条记录</p>
+<p>3、完成任务/失败任务，只返回最新的100条记录</p>
+<p><strong>请求参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>type</td>
+<td>int</td>
+<td>是</td>
+<td>任务类型，1 上传、2 网盘文件下载、3 远程下载</td>
+</tr>
+<tr>
+<td>status</td>
+<td>int</td>
+<td>否</td>
+<td>任务列表状态<br>1 当前任务(包括运行、暂停、等待)、2 完成任务、3 失败任务，默认全部</td>
+</tr>
+<tr>
+<td>web</td>
+<td>int</td>
+<td>否</td>
+<td>是否来自web端请求，1 是，默认0<br>web=1时，返回的task_id为string类型</td>
+</tr>
+</tbody></table>
+<p><strong>响应参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>task_id</td>
+<td>uint64</td>
+<td>任务ID</td>
+</tr>
+<tr>
+<td>type</td>
+<td>int</td>
+<td>任务类型，1 上传、2 网盘文件下载、3 远程下载</td>
+</tr>
+<tr>
+<td>status</td>
+<td>int</td>
+<td>任务状态， 1等待中、2离线下载中、3进行中、4暂停、5完成、6失败、7被删除</td>
+</tr>
+<tr>
+<td>detail_info</td>
+<td>string</td>
+<td>任务失败原因</td>
+</tr>
+<tr>
+<td>category</td>
+<td>int</td>
+<td>文件类型，1 视频、2 音频、3 图片、4 文档、5 应用、6 其他、7 种子</td>
+</tr>
+<tr>
+<td>name</td>
+<td>string</td>
+<td>任务名称</td>
+</tr>
+<tr>
+<td>speed</td>
+<td>uint64</td>
+<td>任务速度，单位B/s</td>
+</tr>
+<tr>
+<td>size</td>
+<td>uint64</td>
+<td>任务文件大小，单位B</td>
+</tr>
+<tr>
+<td>current_size</td>
+<td>uint64</td>
+<td>当前完成大小，单位B</td>
+</tr>
+<tr>
+<td>ctime</td>
+<td>int</td>
+<td>任务创建时间</td>
+</tr>
+<tr>
+<td>mtime</td>
+<td>int</td>
+<td>任务修改时间</td>
+</tr>
+</tbody></table>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell">curl "https://pan.baidu.com/rest/2.0/xpan/nas?method=progress&amp;clienttype=123&amp;channel=123&amp;access_token=123&amp;device_id=456&amp;type=1" -H "User-Agent: pan.baidu.com"</code></pre>
+<p><strong>响应示例</strong></p>
+<pre><code class="language-json">{
+  "errmsg": "succ",
+  "errno": 0,
+  "list": [
+    {
+      "category": 6,
+      "ctime": 1545101512,
+      "current_size": 16116201,
+      "detail_info": "",
+      "mtime": 1545101531,
+      "name": "omg100.zip",
+      "size": 16116201,
+      "speed": 0,
+      "status": 5,
+      "task_id": 11545101512000242
+    },
+    {
+      "category": 6,
+      "ctime": 1545039917,
+      "current_size": 0,
+      "detail_info": "",
+      "mtime": 1545039942,
+      "name": "DSC01217.JPG",
+      "size": 1345921,
+      "speed": 0,
+      "status": 5,
+      "task_id": 11545039917001911
+    }
+  ],
+  "request_id": "3002835170661482083"
+}</code></pre>
+<h3 id="操作单个任务">操作单个任务</h3>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">GET https://pan.baidu.com/rest/2.0/xpan/nas?method=operate</code></pre>
+<p><strong>请求参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>task_id</td>
+<td>uint64</td>
+<td>是</td>
+<td>任务ID</td>
+</tr>
+<tr>
+<td>action</td>
+<td>int</td>
+<td>yes</td>
+<td>操作类型，1暂停、2继续、3删除、4重试、7 删除(仅删除任务)</td>
+</tr>
+</tbody></table>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell"># 继续任务
+curl "https://pan.baidu.com/rest/2.0/xpan/nas?method=operate&amp;clienttype=123&amp;channel=123&amp;access_token=123&amp;device_id=456&amp;task_id=11545102414000214&amp;action=2" -H "User-Agent: pan.baidu.com"</code></pre>
+<h3 id="批量操作任务">批量操作任务</h3>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">POST https://pan.baidu.com/rest/2.0/xpan/nas?method=batch</code></pre>
+<p><strong>请求参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>type</td>
+<td>int</td>
+<td>是</td>
+<td>任务类型，1上传、 网盘文件下载、3远程下载</td>
+</tr>
+<tr>
+<td>action</td>
+<td>int</td>
+<td>是</td>
+<td>1删除、2清空</td>
+</tr>
+<tr>
+<td>task_ids</td>
+<td>json array</td>
+<td>否</td>
+<td>任务id列表，action=1时必需</td>
+</tr>
+<tr>
+<td>status</td>
+<td>int</td>
+<td>否</td>
+<td>任务列表状态<br>1 当前任务(包括运行、暂停、等待)、2 完成任务、3 失败任务<br>action=2时必需</td>
+</tr>
+<tr>
+<td>web</td>
+<td>int</td>
+<td>否</td>
+<td>是否来自web端请求，1 是，默认0<br>web=1时，task_ids中的task_id传string类型</td>
+</tr>
+</tbody></table>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell"># 删除
+curl "https://pan.baidu.com/rest/2.0/xpan/nas?method=batch&amp;clienttype=123&amp;channel=123&amp;access_token=123&amp;device_id=456&amp;" -d 'type=1&amp;action=1&amp;task_ids=[11545101512000242,11545102373000215]' -H "User-Agent: pan.baidu.com"
+# 清空
+curl "https://pan.baidu.com/rest/2.0/xpan/nas?method=batch&amp;clienttype=123&amp;channel=123&amp;access_token=123&amp;device_id=456&amp;" -d 'type=1&amp;action=2&amp;status=2' -H "User-Agent: pan.baidu.com"</code></pre>
+</div></div>

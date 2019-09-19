@@ -1,0 +1,724 @@
+<div data-v-446853f1="" class="open-body__right markdown-body"><div data-v-e39afd5e="" data-v-446853f1="" class="document"><h2 id="通用参数">通用参数</h2>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>access_token</td>
+<td>string</td>
+<td>是</td>
+<td>授权凭证</td>
+</tr>
+</tbody></table>
+<p>备注：</p>
+<p>1、所有接口都要带</p>
+<p>2、通用参数必须放在URL里</p>
+<h2 id="接口列表">接口列表</h2>
+<h3 id="创建外链">创建外链</h3>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">POST https://pan.baidu.com/rest/2.0/xpan/share?method=set</code></pre>
+<p><strong>请求参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>fid_list</td>
+<td>json array</td>
+<td>是</td>
+<td>文件fsid数组，fsid为uint64类型，个数上限1000</td>
+</tr>
+<tr>
+<td>schannel</td>
+<td>int</td>
+<td>是</td>
+<td>分享途径，固定值：4</td>
+</tr>
+<tr>
+<td>channel_list</td>
+<td>json array</td>
+<td>是</td>
+<td>分享途径信息，固定值：[]</td>
+</tr>
+<tr>
+<td>pwd</td>
+<td>string</td>
+<td>否</td>
+<td>4位数字字母验证码，schannel=4时必需，不能为完全相同的字母</td>
+</tr>
+<tr>
+<td>period</td>
+<td>int</td>
+<td>否</td>
+<td>外链有效期，0 永久、1 1天、7 7天，默认0</td>
+</tr>
+</tbody></table>
+<p><strong>响应参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>shareid</td>
+<td>uint64</td>
+<td>外链id</td>
+</tr>
+<tr>
+<td>link</td>
+<td>string</td>
+<td>外链地址，其中短链地址为/s/1后面内容</td>
+</tr>
+<tr>
+<td>expiredType</td>
+<td>int</td>
+<td>外链有效期，0 永久、1 1天、7 7天</td>
+</tr>
+</tbody></table>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell">curl "https://pan.baidu.com/share/set?access_token=123" -d 'fid_list=[456]&amp;schannel=4&amp;channel_list=[]&amp;pwd=1234&amp;period=7' -H "User-Agent: pan.baidu.com"</code></pre>
+<p><strong>响应示例</strong></p>
+<pre><code class="language-json"># 短链地址为 nK8xebzVxzM2nKLNvZE-6w
+{
+  "errno": 0,
+  "request_id": 2150290235831734935,
+  "shareid": 2447777548,
+  "link": "https:///pan.baidu.com/s/1nK8xebzVxzM2nKLNvZE-6w",
+  "shorturl": "https://pan.baidu.com/s/1nK8xebzVxzM2nKLNvZE-6w",
+  "ctime": 1554282456,
+  "expiredType": 7,
+  "premis": false
+}</code></pre>
+<p><strong>错误码说明</strong></p>
+<table>
+<thead>
+<tr>
+<th>错误码</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>-3</td>
+<td>fsid不存在</td>
+</tr>
+<tr>
+<td>-70</td>
+<td>分享文件存在病毒</td>
+</tr>
+<tr>
+<td>108</td>
+<td>文件命中反作弊策略</td>
+</tr>
+<tr>
+<td>110</td>
+<td>文件命中频控策略</td>
+</tr>
+<tr>
+<td>115</td>
+<td>文件命中黑名单禁止分享</td>
+</tr>
+</tbody></table>
+<h3 id="外链密码验证">外链密码验证</h3>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">POST https://pan.baidu.com/rest/2.0/xpan/share?method=verify</code></pre>
+<p>备注：无需带access_token</p>
+<p><strong>请求参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>pwd</td>
+<td>string</td>
+<td>是</td>
+<td>4位数字字母验证码</td>
+</tr>
+<tr>
+<td>surl</td>
+<td>string</td>
+<td>是</td>
+<td>短链地址，对应set接口返回的link参数中/s/1后面内容</td>
+</tr>
+<tr>
+<td>vcode</td>
+<td>string</td>
+<td>否</td>
+<td>输入的验证码</td>
+</tr>
+<tr>
+<td>vcode_str</td>
+<td>string</td>
+<td>否</td>
+<td>验证码接口返回的随机串</td>
+</tr>
+</tbody></table>
+<p><strong>响应参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>randsk</td>
+<td>string</td>
+<td>外链密码</td>
+</tr>
+</tbody></table>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell"># 必须要带Referer
+curl "https://pan.baidu.com/share/verify?shareid=2447777548&amp;surl=nK8xebzVxzM2nKLNvZE-6w" -d 'pwd=1234' -H "User-Agent: pan.baidu.com" -H "Referer:pan.baidu.com"</code></pre>
+<p><strong>响应示例</strong></p>
+<pre><code class="language-json">{
+  "errno": 0,
+  "err_msg": "",
+  "request_id": 9083846936265387248,
+  "randsk": "S3l2qkR0bI1o7ZzYxedCG3dy3t58FB3wqQgKARJ5b1Y%3D"
+}</code></pre>
+<p><strong>错误码说明</strong></p>
+<table>
+<thead>
+<tr>
+<th>错误码</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>105</td>
+<td>外链地址错误</td>
+</tr>
+<tr>
+<td>-12</td>
+<td>参数错误</td>
+</tr>
+<tr>
+<td>-9</td>
+<td>pwd错误</td>
+</tr>
+</tbody></table>
+<h3 id="获取外链中的文件列表">获取外链中的文件列表</h3>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">GET https://pan.baidu.com/rest/2.0/xpan/share?method=list</code></pre>
+<p>备注：无需带access_token</p>
+<p><strong>请求参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>shareid</td>
+<td>uint64</td>
+<td>是</td>
+<td>外链id</td>
+</tr>
+<tr>
+<td>shorturl</td>
+<td>string</td>
+<td>是</td>
+<td>短链地址，对应set接口返回的link参数中/s/1后面内容</td>
+</tr>
+<tr>
+<td>page</td>
+<td>int</td>
+<td>否</td>
+<td>页数，默认1</td>
+</tr>
+<tr>
+<td>num</td>
+<td>int</td>
+<td>否</td>
+<td>每页个数，默认100</td>
+</tr>
+<tr>
+<td>root</td>
+<td>int</td>
+<td>否</td>
+<td>为1时，表示显示外链根目录下所有文件</td>
+</tr>
+<tr>
+<td>fid</td>
+<td>uint64</td>
+<td>否</td>
+<td>文件夹ID，表示显示文件夹下的所有文件</td>
+</tr>
+<tr>
+<td>sekey</td>
+<td>string</td>
+<td>是</td>
+<td>外链密码，对应verify接口返回的randsk</td>
+</tr>
+</tbody></table>
+<p><strong>响应参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>server_time</td>
+<td>uint</td>
+<td>服务器当前时间</td>
+</tr>
+<tr>
+<td>list</td>
+<td>json array</td>
+<td>文件列表</td>
+</tr>
+<tr>
+<td>title</td>
+<td>string</td>
+<td>外链标题，root=1时有效</td>
+</tr>
+</tbody></table>
+<p>list内容</p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>fs_id</td>
+<td>string</td>
+<td>文件id</td>
+</tr>
+<tr>
+<td>size</td>
+<td>string</td>
+<td>文件大小，单位B</td>
+</tr>
+<tr>
+<td>server_filename</td>
+<td>string</td>
+<td>文件名</td>
+</tr>
+<tr>
+<td>path</td>
+<td>string</td>
+<td>文件路径</td>
+</tr>
+<tr>
+<td>isdir</td>
+<td>string</td>
+<td>0 文件，1 目录</td>
+</tr>
+<tr>
+<td>category</td>
+<td>string</td>
+<td>文件类型，1 视频、2 音频、3 图片、4 文档、5 应用、6 其他、7 种子</td>
+</tr>
+<tr>
+<td>md5</td>
+<td>string</td>
+<td>文件md5值</td>
+</tr>
+<tr>
+<td>server_ctime</td>
+<td>string</td>
+<td>创建时间</td>
+</tr>
+<tr>
+<td>server_mtime</td>
+<td>string</td>
+<td>修改时间</td>
+</tr>
+<tr>
+<td>thumbs</td>
+<td>json array</td>
+<td>文件缩略图地址</td>
+</tr>
+</tbody></table>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell">curl "https://pan.baidu.com/share/list?shareid=2656872938&amp;shorturl=QgpBsjpUNFDp_Fvz7C0OCw&amp;sekey=S3l2qkR0bI1Iuc%2f2Jxv2g2a4vLQkzx9KQlztg%2b04YNQ=&amp;root=1" -H "User-Agent: pan.baidu.com"
+
+<h1 id="查看外链中的文件夹">查看外链中的文件夹</h1>
+</code><p><code class="language-shell">curl "<a href="https://pan.baidu.com/share/list?shareid=2656872938&amp;shorturl=QgpBsjpUNFDp_Fvz7C0OCw&amp;sekey=S3l2qkR0bI1Iuc%2f2Jxv2g2a4vLQkzx9KQlztg%2b04YNQ=&amp;dir=/baidu/image/%E8%80%81%E5%AE%B6%E7%85%A7%E7%89%87&amp;page=1&amp;num=10">https://pan.baidu.com/share/list?shareid=2656872938&amp;shorturl=QgpBsjpUNFDp_Fvz7C0OCw&amp;sekey=S3l2qkR0bI1Iuc%2f2Jxv2g2a4vLQkzx9KQlztg%2b04YNQ=&amp;dir=/baidu/image/老家照片&amp;page=1&amp;num=10</a>" -H "User-Agent: pan.baidu.com"</code></p></pre><p></p>
+<p><strong>响应示例</strong></p>
+<pre><code class="language-json">{
+  "errno": 0,
+  "request_id": 9107164444309491093,
+  "server_time": 1554429027,
+  "title": "/baidu/image/老家照片",
+  "list": [
+    {
+      "fs_id": "376731180462903",
+      "server_filename": "老家照片",
+      "size": "0",
+      "server_mtime": "1548246114",
+      "server_ctime": "1548246114",
+      "local_mtime": "1548246114",
+      "local_ctime": "1548246114",
+      "isdir": "1",
+      "category": "6",
+      "path": "/baidu/image/老家照片",
+      "md5": ""
+    }
+  ]
+}
+# 查看外链中的文件夹
+{
+  "errno": 0,
+  "request_id": 9108845501007564242,
+  "server_time": 1554435290,
+  "list": [
+    {
+      "fs_id": 643517115231309,
+      "path": "/baidu/image/老家照片/我美丽的家.jpg",
+      "server_filename": "我美丽的家.jpg",
+      "size": 694829,
+      "server_mtime": 1548246343,
+      "server_ctime": 1548246343,
+      "local_mtime": 1548246343,
+      "local_ctime": 1548246343,
+      "isdir": 0,
+      "category": 3,
+      "md5": "aeab5f0936e2689446d2d8967e991ceb",
+      "thumbs": {
+        "url1": "https://thumbnail0.baidupcs.com/thumbnail/aeab5f0936e2689446d2d8967e991ceb?fid=3389535607-250528-643517115231309&amp;time=1554433200&amp;rt=sh&amp;sign=FDTAER-DCb740ccc5511e5e8fedcff06b081203-DtBYOyH%2FiwTDt2BDNouPSYebZ2E%3D&amp;expires=8h&amp;chkv=0&amp;chkbd=0&amp;chkpc=&amp;dp-logid=9108845501007564242&amp;dp-callid=0&amp;size=c140_u90&amp;quality=100&amp;vuk=-&amp;ft=video",
+        "url2": "https://thumbnail0.baidupcs.com/thumbnail/aeab5f0936e2689446d2d8967e991ceb?fid=3389535607-250528-643517115231309&amp;time=1554433200&amp;rt=sh&amp;sign=FDTAER-DCb740ccc5511e5e8fedcff06b081203-DtBYOyH%2FiwTDt2BDNouPSYebZ2E%3D&amp;expires=8h&amp;chkv=0&amp;chkbd=0&amp;chkpc=&amp;dp-logid=9108845501007564242&amp;dp-callid=0&amp;size=c360_u270&amp;quality=100&amp;vuk=-&amp;ft=video",
+        "url3": "https://thumbnail0.baidupcs.com/thumbnail/aeab5f0936e2689446d2d8967e991ceb?fid=3389535607-250528-643517115231309&amp;time=1554433200&amp;rt=sh&amp;sign=FDTAER-DCb740ccc5511e5e8fedcff06b081203-DtBYOyH%2FiwTDt2BDNouPSYebZ2E%3D&amp;expires=8h&amp;chkv=0&amp;chkbd=0&amp;chkpc=&amp;dp-logid=9108845501007564242&amp;dp-callid=0&amp;size=c850_u580&amp;quality=100&amp;vuk=-&amp;ft=video",
+        "icon": "https://thumbnail0.baidupcs.com/thumbnail/aeab5f0936e2689446d2d8967e991ceb?fid=3389535607-250528-643517115231309&amp;time=1554433200&amp;rt=sh&amp;sign=FDTAER-DCb740ccc5511e5e8fedcff06b081203-DtBYOyH%2FiwTDt2BDNouPSYebZ2E%3D&amp;expires=8h&amp;chkv=0&amp;chkbd=0&amp;chkpc=&amp;dp-logid=9108845501007564242&amp;dp-callid=0&amp;size=c60_u60&amp;quality=100&amp;vuk=-&amp;ft=video"
+      }
+    }
+  ]
+}</code></pre>
+<p><strong>错误码说明</strong></p>
+<table>
+<thead>
+<tr>
+<th>错误码</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>110</td>
+<td>命中频控</td>
+</tr>
+<tr>
+<td>105</td>
+<td>外链地址错误</td>
+</tr>
+<tr>
+<td>-7</td>
+<td>shareid不存在</td>
+</tr>
+</tbody></table>
+<h3 id="查询外链详细信息">查询外链详细信息</h3>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">GETT https://pan.baidu.com/api/shorturlinfo</code></pre>
+<p>备注：只要接口正常返回数据就可以，无需关心errno。</p>
+<p><strong>请求参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必须</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>shareid</td>
+<td>uint64</td>
+<td>是</td>
+<td>外链id</td>
+</tr>
+<tr>
+<td>shorturl</td>
+<td>string</td>
+<td>是</td>
+<td>短链地址，对应set接口返回的link参数中/s/后面内容，注意是/s/后面内容</td>
+</tr>
+<tr>
+<td>spd</td>
+<td>string</td>
+<td>是</td>
+<td>外链密码，对应verify接口返回的randsk</td>
+</tr>
+</tbody></table>
+<p><strong>响应参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>uk</td>
+<td>uint64</td>
+<td>外链创建者的uk</td>
+</tr>
+<tr>
+<td>longurl</td>
+<td>string</td>
+<td>长链地址</td>
+</tr>
+</tbody></table>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell"># 注意shorturl取值
+curl "https://pan.baidu.com/api/shorturlinfo?shareid=603243370&amp;shorturl=1Yu9tb_URQrnkhmFEn54xfQ&amp;spd=S3l2qkR0bI2YhL3%2FmpIRcYnI3LXorXu31drvKFuFpJU%3D" -H "User-Agent: pan.baidu.com"</code></pre>
+<p><strong>响应示例</strong></p>
+<pre><code class="language-json">{
+  "shareid": 603243370,
+  "uk": 3389535607,
+  "dir": "",
+  "type": 0,
+  "prod_type": "share",
+  "page": 1,
+  "root": 0,
+  "third": 0,
+  "longurl": "shareid=603243370&amp;uk=3389535607",
+  "fid": 0,
+  "errno": -3,
+  "ctime": 1554277131,
+  "expiredtype": 167820,
+  "fcount": 1
+}</code></pre>
+<p><strong>错误码说明</strong></p>
+<table>
+<thead>
+<tr>
+<th>错误码</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>-9</td>
+<td>spd参数错误</td>
+</tr>
+</tbody></table>
+<h3 id="外链文件转存">外链文件转存</h3>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">POST https://pan.baidu.com/rest/2.0/xpan/share?method=transfer</code></pre>
+<p>备注：</p>
+<p>1、普通用户单次最多转存1000个文件</p>
+<p>2、普通会员用户单次最多转存3000个文件</p>
+<p>3、超级会员用户单次最多转存50000个文件</p>
+<p><strong>请求参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>shareid</td>
+<td>uint64</td>
+<td>是</td>
+<td>外链id</td>
+</tr>
+<tr>
+<td>from</td>
+<td>uint64</td>
+<td>是</td>
+<td>外链创建者uk</td>
+</tr>
+<tr>
+<td>sekey</td>
+<td>string</td>
+<td>是</td>
+<td>外链密码，对应verify接口返回的randsk</td>
+</tr>
+<tr>
+<td>fsidlist</td>
+<td>string</td>
+<td>是</td>
+<td>需要转存的文件id数组，fsid类型为uint64</td>
+</tr>
+<tr>
+<td>path</td>
+<td>string</td>
+<td>是</td>
+<td>转存到的目录，post参数</td>
+</tr>
+<tr>
+<td>async</td>
+<td>int</td>
+<td>否</td>
+<td>1 异步转存，0 同步转存，默认0</td>
+</tr>
+<tr>
+<td>ondup</td>
+<td>string</td>
+<td>否</td>
+<td>newcopy表示目标文件存在时，生成副本</td>
+</tr>
+</tbody></table>
+<p><strong>响应参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>taskid</td>
+<td>int</td>
+<td>任务ID，0表示走的是同步转存</td>
+</tr>
+<tr>
+<td>info</td>
+<td>json array</td>
+<td>转存信息</td>
+</tr>
+<tr>
+<td>extra</td>
+<td>json array</td>
+<td>其他信息</td>
+</tr>
+</tbody></table>
+<p>info内容</p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>path</td>
+<td>string</td>
+<td>转存文件路径</td>
+</tr>
+<tr>
+<td>fsid</td>
+<td>uint64</td>
+<td>转存文件ID</td>
+</tr>
+</tbody></table>
+<p>extra内容</p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>from_fs_id</td>
+<td>uint64</td>
+<td>转存文件ID</td>
+</tr>
+<tr>
+<td>to</td>
+<td>string</td>
+<td>保存路径</td>
+</tr>
+<tr>
+<td>from</td>
+<td>string</td>
+<td>转存文件路径</td>
+</tr>
+</tbody></table>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell"># 必须带Referer
+curl "https://pan.baidu.com/share/transfer?access_token=123&amp;shareid=3440411579&amp;from=3389535607&amp;sekey=S3l2qkR0bI3GUR2UXVVKyRXrm2760dC6mg2ExG0qbUM%3d" -d 'fsidlist=[689582071279227,523224362330193]&amp;path=%2fbaidu' -H "User-Agent: pan.baidu.com" -H "Referer:pan.baidu.com"</code></pre>
+<p><strong>响应示例</strong></p>
+<pre><code class="language-json">{
+  "errno": 0,
+  "task_id": 0,
+  "info": [
+    {
+      "path": "/简史系列丛书(时间简史、万物简史、人类简史、信息简史合集).mobi",
+      "errno": 0,
+      "fsid": 689582071279227
+    },
+    {
+      "path": "/简史系列丛书(时间简史、万物简史、人类简史、信息简史合集).epub",
+      "errno": 0,
+      "fsid": 523224362330193
+    }
+  ],
+  "extra": {
+    "list": [
+      {
+        "from_fs_id": 689582071279227,
+        "to": "/baidu/简史系列丛书(时间简史、万物简史、人类简史、信息简史合集).mobi",
+        "from": "/简史系列丛书(时间简史、万物简史、人类简史、信息简史合集).mobi"
+      },
+      {
+        "from_fs_id": 523224362330193,
+        "to": "/baidu/简史系列丛书(时间简史、万物简史、人类简史、信息简史合集).epub",
+        "from": "/简史系列丛书(时间简史、万物简史、人类简史、信息简史合集).epub"
+      }
+    ]
+  }
+}</code></pre>
+<p><strong>错误码说明</strong></p>
+<table>
+<thead>
+<tr>
+<th>错误码</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>111</td>
+<td>有其他转存任务在进行</td>
+</tr>
+<tr>
+<td>120</td>
+<td>非会员用户达到转存文件数目上限</td>
+</tr>
+<tr>
+<td>130</td>
+<td>达到高级会员转存上限</td>
+</tr>
+<tr>
+<td>-33</td>
+<td>达到转存文件数目上限</td>
+</tr>
+<tr>
+<td>12</td>
+<td>批量操作失败</td>
+</tr>
+<tr>
+<td>-3</td>
+<td>转存文件不存在</td>
+</tr>
+</tbody></table>
+<h2 id="附录">附录</h2>
+<h3 id="外链创建频控规则">外链创建频控规则</h3>
+<p>单个用户每分钟创建外链上限: 20</p>
+<p>单个用户每小时创建外链上限: 300</p>
+<p>单个用户每天创建外链上限: 10000</p>
+</div></div>

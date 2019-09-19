@@ -1,0 +1,545 @@
+<div data-v-446853f1="" class="open-body__right markdown-body"><div data-v-e39afd5e="" data-v-446853f1="" class="document"><p>音频能力主要包括：歌单管理、点播服务。</p>
+<h2 id="接入步骤">接入步骤</h2>
+<p>1、获取access_token，参考开放平台接入文档</p>
+<p>2、设备注册、设备绑定，参考开放平台设备管理接口文档</p>
+<p>3、使用 access_token + deviceId 请求音频服务</p>
+<h2 id="通用参数">通用参数</h2>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>clienttype</td>
+<td>int</td>
+<td>是</td>
+<td>客户端类型，具体值线下提供</td>
+</tr>
+<tr>
+<td>channel</td>
+<td>string</td>
+<td>是</td>
+<td>客户端名称，具体值线下提供</td>
+</tr>
+<tr>
+<td>access_token</td>
+<td>string</td>
+<td>是</td>
+<td>授权凭证</td>
+</tr>
+<tr>
+<td>device_id</td>
+<td>string</td>
+<td>是</td>
+<td>设备ID，设备注册接口下发</td>
+</tr>
+<tr>
+<td>time</td>
+<td>string</td>
+<td>是</td>
+<td>请求时间戳，单位秒</td>
+</tr>
+<tr>
+<td>rand</td>
+<td>string</td>
+<td>是</td>
+<td>防破解参数，计算方法线下提供</td>
+</tr>
+</tbody></table>
+<p>备注：</p>
+<p>1、所有接口都要带</p>
+<p>2、通用参数必须放在URL里</p>
+<h2 id="接口列表">接口列表</h2>
+<h3 id="获取待添加的音频文件列表">获取待添加的音频文件列表</h3>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">GET https://pan.baidu.com/rest/2.0/xpan/soundbox?method=selectlist</code></pre>
+<p>备注：返回结果按文件修改时间倒序排列</p>
+<p><strong>请求参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>start</td>
+<td>int32</td>
+<td>是</td>
+<td>查询起点</td>
+</tr>
+<tr>
+<td>limit</td>
+<td>int32</td>
+<td>是</td>
+<td>查询数目，最大限制为500</td>
+</tr>
+</tbody></table>
+<p><strong>响应参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>list</td>
+<td>json array</td>
+<td>文件列表</td>
+</tr>
+<tr>
+<td>has_more</td>
+<td>int32</td>
+<td>是否还有下一分页，1 还有、0 没有</td>
+</tr>
+<tr>
+<td>cursor</td>
+<td>int32</td>
+<td>下一次查询的start</td>
+</tr>
+</tbody></table>
+<p>array内容</p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>path</td>
+<td>string</td>
+<td>文件全路径</td>
+</tr>
+<tr>
+<td>filename</td>
+<td>string</td>
+<td>文件名</td>
+</tr>
+<tr>
+<td>fs_id</td>
+<td>uint64</td>
+<td>文件id</td>
+</tr>
+<tr>
+<td>size</td>
+<td>uint64</td>
+<td>文件大小</td>
+</tr>
+<tr>
+<td>ctime</td>
+<td>int32</td>
+<td>服务端创建时间</td>
+</tr>
+<tr>
+<td>mtime</td>
+<td>int32</td>
+<td>服务端修改时间</td>
+</tr>
+</tbody></table>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell">curl "https://pan.baidu.com/rest/2.0/xpan/soundbox?method=selectlist&amp;clienttype=101&amp;channel=yinxiangserver&amp;access_token=123&amp;device_id=456&amp;time=1545999823&amp;rand=789&amp;start=0&amp;limit=10" -H "User-Agent: pan.baidu.com" </code></pre>
+<p><strong>响应示例</strong></p>
+<pre><code class="language-json">{
+  "cursor": 10,
+  "errmsg": "succ",
+  "errno": 0,
+  "has_more": 1,
+  "list": [
+    {
+      "ctime": 1405574688,
+      "filename": "周杰伦 - 最新东风破.mp3",
+      "fs_id": 162859824199844,
+      "mtime": 1545998568,
+      "path": "/百度test/音乐/叶惠美/周杰伦 - 最新东风破.mp3",
+      "size": 5050022
+    },
+    {
+      "ctime": 1405574693,
+      "filename": "周杰伦 - 双刀.mp3",
+      "fs_id": 711243569757141,
+      "mtime": 1534397825,
+      "path": "/百度test/音乐/叶惠美/周杰伦 - 双刀.mp3",
+      "size": 11663360
+    }
+  ],
+  "request_id": "2747470237664671977"
+}</code></pre>
+<p><strong>错误码说明</strong></p>
+<table>
+<thead>
+<tr>
+<th>错误码</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>42501</td>
+<td>数目超限</td>
+</tr>
+</tbody></table>
+<h3 id="添加音频文件到列表">添加音频文件到列表</h3>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">POST https://pan.baidu.com/rest/2.0/xpan/soundbox?method=add</code></pre>
+<p><strong>请求参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>list</td>
+<td>json array</td>
+<td>是</td>
+<td>fs_id数组，数组最大长度为200</td>
+</tr>
+</tbody></table>
+<p>备注：具体使用参考示例</p>
+<p><strong>响应参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>list</td>
+<td>json array</td>
+<td>添加成功的fs_id</td>
+</tr>
+</tbody></table>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell">curl "https://pan.baidu.com/rest/2.0/xpan/soundbox?method=add&amp;clienttype=101&amp;channel=yinxiangserver&amp;access_token=123&amp;device_id=456&amp;time=1545999823&amp;rand=789" -d 'param={"list":[162859824199844,1039269563558843]}' -H "User-Agent: pan.baidu.com" </code></pre>
+<p><strong>响应示例</strong></p>
+<pre><code class="language-json">{
+  "errmsg": "succ",
+  "errno": 0,
+  "list": [
+    162859824199844,
+    1039269563558843
+  ],
+  "request_id": "2887486210172651182"
+}</code></pre>
+<p><strong>错误码说明</strong></p>
+<table>
+<thead>
+<tr>
+<th>错误码</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>42501</td>
+<td>数目超限</td>
+</tr>
+<tr>
+<td>42503</td>
+<td>音频文件添加失败</td>
+</tr>
+</tbody></table>
+<h3 id="从列表中删除音频文件">从列表中删除音频文件</h3>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">POST https://pan.baidu.com/rest/2.0/xpan/soundbox?method=delete</code></pre>
+<p><strong>请求参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>list</td>
+<td>json array</td>
+<td>是</td>
+<td>fs_id数组，数组最大长度为200</td>
+</tr>
+</tbody></table>
+<p>备注：具体使用参考示例</p>
+<p><strong>响应参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>list</td>
+<td>json array</td>
+<td>删除成功的fs_id</td>
+</tr>
+</tbody></table>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell">curl "https://pan.baidu.com/rest/2.0/xpan/soundbox?method=delete&amp;clienttype=101&amp;channel=yinxiangserver&amp;access_token=123&amp;device_id=456&amp;time=1545999823&amp;rand=789" -d 'param={"list":[162859824199844,1039269563558843]}' -H "User-Agent: pan.baidu.com" </code></pre>
+<p><strong>响应示例</strong></p>
+<pre><code class="language-json">{
+  "errmsg": "succ",
+  "errno": 0,
+  "list": [
+    162859824199844,
+    1039269563558843
+  ],
+  "request_id": "3078939214344735430"
+}</code></pre>
+<p><strong>错误码说明</strong></p>
+<table>
+<thead>
+<tr>
+<th>错误码</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>42501</td>
+<td>数目超限</td>
+</tr>
+<tr>
+<td>42505</td>
+<td>音频文件删除失败</td>
+</tr>
+</tbody></table>
+<h3 id="获取音频列表">获取音频列表</h3>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">GET https://pan.baidu.com/rest/2.0/xpan/soundbox?method=list</code></pre>
+<p><strong>请求参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>start</td>
+<td>int32</td>
+<td>是</td>
+<td>查询起点</td>
+</tr>
+<tr>
+<td>limit</td>
+<td>int32</td>
+<td>是</td>
+<td>查询数目，最大为1000</td>
+</tr>
+</tbody></table>
+<p><strong>响应参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>album</td>
+<td>string</td>
+<td>专辑名称</td>
+</tr>
+<tr>
+<td>artist</td>
+<td>string</td>
+<td>歌手名称</td>
+</tr>
+<tr>
+<td>title</td>
+<td>string</td>
+<td>歌曲名称</td>
+</tr>
+</tbody></table>
+<p>备注：音频meta信息可能为空</p>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell">curl "https://pan.baidu.com/rest/2.0/xpan/soundbox?method=list&amp;clienttype=101&amp;channel=yinxiangserver&amp;access_token=123&amp;device_id=456&amp;time=1545999823&amp;rand=789&amp;start=0&amp;limit=10" -H "User-Agent: pan.baidu.com" </code></pre>
+<p><strong>响应示例</strong></p>
+<pre><code class="language-json">{
+  "errmsg": "succ",
+  "errno": 0,
+  "has_more": 0,
+  "list": [
+    {
+      "album": "",
+      "artist": "",
+      "ctime": 1546001690,
+      "filename": "26. Gigantic Formula.flac",
+      "fs_id": 1039269563558843,
+      "mtime": 1546002347,
+      "path": "/来自：华为路由器/26. Gigantic Formula.flac",
+      "size": 26963668,
+      "title": ""
+    },
+    {
+      "album": "",
+      "artist": "",
+      "ctime": 1546001690,
+      "filename": "周杰伦 - 最新东风破.mp3",
+      "fs_id": 162859824199844,
+      "mtime": 1546002347,
+      "path": "/百度test/音乐/叶惠美/周杰伦 - 最新东风破.mp3",
+      "size": 5050022,
+      "title": ""
+    }
+  ],
+  "request_id": "3053359695812786205"
+}</code></pre>
+<p><strong>错误码说明</strong></p>
+<table>
+<thead>
+<tr>
+<th>错误码</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>42501</td>
+<td>数目超限</td>
+</tr>
+</tbody></table>
+<h3 id="音频列表diff">音频列表diff</h3>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">GET https://pan.baidu.com/rest/2.0/xpan/soundbox?method=diff</code></pre>
+<p>备注：每次最多返回500条数据</p>
+<p><strong>请求参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>cursor</td>
+<td>string</td>
+<td>是</td>
+<td>diff起点，初始值为null</td>
+</tr>
+</tbody></table>
+<p><strong>响应参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>list</td>
+<td>json array</td>
+<td>文件列表</td>
+</tr>
+<tr>
+<td>has_more</td>
+<td>int32</td>
+<td>是否还有数据，1 还有、0 没有</td>
+</tr>
+<tr>
+<td>cursor</td>
+<td>int32</td>
+<td>下一次diff的起点</td>
+</tr>
+</tbody></table>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell">curl "https://pan.baidu.com/rest/2.0/xpan/soundbox?method=diff&amp;clienttype=101&amp;channel=yinxiangserver&amp;access_token=123&amp;device_id=456&amp;time=1545999823&amp;rand=789&amp;diff=null" -H "User-Agent: pan.baidu.com" </code></pre>
+<p><strong>响应示例</strong></p>
+<pre><code class="language-json">{
+  "cursor": "at6hotv57vKrrqIoifFbvH6LvDBeIJoAAfeXbc9mUspWOhhRzXG4-Zu7_l_Rihueib4kk6NIBbXDFnEFKlayOQ==",
+  "errmsg": "succ",
+  "errno": 0,
+  "has_more": 0,
+  "list": [
+    {
+      "album": "",
+      "artist": "",
+      "ctime": 1546005446,
+      "filename": "Acreix - Visions.mp3",
+      "fs_id": 158989214875228,
+      "isdelete": 0,
+      "mtime": 1546005446,
+      "path": "/百度test/音乐/Acreix - Visions.mp3",
+      "size": 8062875,
+      "title": ""
+    },
+  ],
+  "request_id": "3199522241430307797"
+}</code></pre>
+<h3 id="获取音频文件播放地址">获取音频文件播放地址</h3>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">GET https://pan.baidu.com/rest/2.0/xpan/soundbox?method=download</code></pre>
+<p><strong>请求参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>fs_id</td>
+<td>uint64</td>
+<td>是</td>
+<td>文件ID</td>
+</tr>
+</tbody></table>
+<p><strong>响应参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>dlink</td>
+<td>string</td>
+<td>文件下载地址，存在302跳转</td>
+</tr>
+</tbody></table>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell">curl "https://pan.baidu.com/rest/2.0/xpan/soundbox?method=download&amp;clienttype=101&amp;channel=yinxiangserver&amp;access_token=123&amp;device_id=456&amp;time=1545999823&amp;rand=789&amp;fs_id=158989214875228" -H "User-Agent: pan.baidu.com" </code></pre>
+<p><strong>响应示例</strong></p>
+<pre><code class="language-json">{
+  "dlink": "http://d.pcs.baidu.com/file/2667ad73181c52eb672785da879325b4?fid=3389535607-250528-158989214875228&amp;time=1546005822&amp;rt=sh&amp;sign=FDTAERe-DCb740ccc5511e5e8fedcff06b081203-DpSc49gVxrS%2F3lx4XBHPQ29C3IE%3D&amp;expires=8h&amp;dp-logid=0&amp;dp-callid=0&amp;r=92733828&amp;caller=dumi",
+  "errmsg": "succ",
+  "errno": 0,
+  "request_id": "3234634906513265323"
+}</code></pre>
+<p><strong>错误码说明</strong></p>
+<table>
+<thead>
+<tr>
+<th>错误码</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>42506</td>
+<td>文件已被删除</td>
+</tr>
+</tbody></table>
+</div></div>

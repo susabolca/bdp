@@ -1,0 +1,218 @@
+<div data-v-446853f1="" class="open-body__right markdown-body"><div data-v-e39afd5e="" data-v-446853f1="" class="document"><h2 id="背景">背景</h2>
+<h3 id="什么是网盘文件提取">什么是网盘文件提取</h3>
+<p><img src="http://issuecdn.baidupcs.com/issue/netdisk/tu/openplatform/panlink_introduction.png" alt="introdction"></p>
+<h3 id="基本原理">基本原理</h3>
+<p><img src="http://issuecdn.baidupcs.com/issue/netdisk/tu/openplatform/panlink_ui.png" alt="ui"></p>
+<p>在设备端下载得到文件后，可自行根据文件格式，调起响应的应用/服务来打开用户文件，提供流畅的体验</p>
+<h2 id="sdk概述">SDK概述</h2>
+<p>本文档主要介绍百度网盘Panlink C++ SDK的安装和使用。使用SDK前，需要先了解panlink文件提取的基本原理。</p>
+<h2 id="运行环境">运行环境</h2>
+<p>Panlink SDK使用Golang编写，支持交叉编译成各种运行环境的Runtime。</p>
+<p>目录结构：</p>
+<pre><code>├─src/baidu.com/panlink
+│  ├─example               // 示例代码
+│  ├─golog                 // 日志库
+│  ├─panlink
+│       ├─panlink_test.go  // Panlink接口封装，单元测试
+│       ├─panlink.go       // Panlink接口封装
+│       └─sign.go          // 签名函数
+│  ├─panlink_agent
+│       ├─agent_test.go    // Panlink客户端主程序，单元测试
+│       ├─agent.go         // Panlink客户端主程序
+│       └─pullworker.go    // 消息 Pull Worker
+│  ├─types
+│       └─errorcode.go     // 错误码定义
+│  └─output
+│       ├─bin              // example编译产出
+│       ├─include          // sdk 头文件
+│       ├─lib              // sdk lib 目录，根据运行环境，选择相应的dll/so文件
+│       └─log              // example 输出的日志目录
+│  └─build.sh</code></pre><p>编译方法：</p>
+<pre><code>// 可以直接使用output中的，安装golang运行环境
+// 参考：https://golang.org/doc/install
+sh build.sh</code></pre><p>目前发布的SDK压缩包中，已经包含了针对各个平台编译的动态链接库文件，如没有对应平台的库文件，则可联系我们提供。</p>
+<h2 id="初始化">初始化</h2>
+<p>在使用SDK前，需要向网盘申请AppID、SK和DeviceType。</p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>AppID</td>
+<td>应用ID，第三方开发者的唯一标识</td>
+</tr>
+<tr>
+<td>SK</td>
+<td>和AppID对应的鉴权密钥，应该尽量避免将SK分发到提供给用户的客户端上</td>
+</tr>
+<tr>
+<td>DeviceType</td>
+<td>设备类型标识，一个AppID下可以有多个DeviceType，用来唯一标识一种接入设备类型，当有多种设备类型时，可以申请多个，DeviceType由网盘为开发者分配</td>
+</tr>
+</tbody></table>
+<p>目前网盘提供 <a href="https://pan.baidu.com">https://pan.baidu.com</a> 作为服务域名</p>
+<h2 id="panlinkagent">PanlinkAgent</h2>
+<p>PanlinkAgent为第三方开发者实现了临时设备标识的申请，文件下发消息的长轮询，并通过回调函数的方式通知第三方开发者。</p>
+<h3 id="配置参数">配置参数</h3>
+<p>参数的设置，请参考example程序：</p>
+<pre><code>typedef struct {
+
+<pre><code class="hljs undefined">// 网盘服务器地址
+const char* PanlinkServerHost;
+
+// 开发者参数，AppID和SK
+int AppID;
+const char* SK;
+const char* DeviceType;
+// 本机的唯一设备ID，可以使用mac地址，或者设备SN码
+const char* DeviceID;
+
+// 请求UUID、消息错误时的重试间隔，单位为s，默认为2s
+int RequestErrorWaitSecond;
+// 在当前UUID过期前多久，请求新的UUID，默认为60
+int RequestUUIDBufferSecond;
+// 拉取UUID内的消息时，最多包含多少个消息，最大为20，默认为：1
+int PullLimit;
+// 最多拉取多少个最近的UUID的消息，默认为2
+int MaxPullWorkerLimit;
+
+// 连接相关信息，建议不要修改，可以使用默认参数
+// 最多空闲连接数，默认：3
+int MaxIdleConns;
+// 空闲连接的最大空闲时间，默认：2s
+int IdleConnTimeoutSecond;
+// 连接超时时间，默认：5s
+int ConnectTimeoutSecond;
+// 请求超时时间，默认：5s
+int RequestTimeoutSecond;
+// tcp keepalive间隔，默认：30s
+int KeepAliveSecond;
+// 长轮询的请求超时时间，默认：100s
+int LongPullRequestTimeoutSecond;</code></pre></code><p><code>}PanlinkAgentConfig;</code></p></pre><p>初始化方法：</p><p></p>
+<pre><code>// PanlinkAgent对象全局只能有一个，当多次初始化时，会导致前一个对象被覆盖，可能会引起内存泄露，对于需要停止更新和拉取UUID时，使用StopAgent()和StartAgent()来启停Agent对象。
+int InitPanlinkAgent(PanlinkAgentConfig* p0);</code></pre><h3 id="uuid申请">UUID申请</h3>
+<p>启动PanlinkAgent的接口：</p>
+<pre><code>int StartAgent();</code></pre><p>启动PanlinkAgent后，Agent向网盘服务器申请临时设备标识，申请到的临时设备标识会包含以下信息：</p>
+<pre><code>typedef struct  {
+    // 错误码，错误码为0时表示结果正常
+    int ErrNo;
+    // 错误消息，当错误码不为0时，可打印错误消息，以便定位错误原因
+    char* ErrMsg;
+    // UUID，设备临时标识
+    char* UUID;
+    // 二维码url，必须使用该url来展示二维码，以便网盘客户端正确识别设备身份
+    char* QRUrl;
+    // Time To Live，UUID的剩余有效时长，单位秒
+    int TTL;
+    // 过期的时间戳，单位秒
+    int ExpireAt;
+}UUIDCallBackData;</code></pre><h3 id="uuid自动更新">UUID自动更新</h3>
+<p>在二维码将要过期时，Panlink Agent会向服务器更新UUID，此时旧的UUID和新申请到的UUID均可以用于文件提取，同时有效的UUID个数可通过<code>PanlinkAgentConfig.MaxPullWorkerLimit</code>来设置。通过<code>PanlinkAgentConfig.RequestUUIDBufferSecond</code>参数可用于配置在当前UUID过期前多久更新UUID。</p>
+<h3 id="uuid手动强制刷新">UUID手动强制刷新</h3>
+<p>强制更新接口：
+    int RefreshUUID();</p>
+<p>强制更新的结果，会通过 UUIDCallBackFn 回调函数返回给开发者。</p>
+<h3 id="uuid二维码生成">UUID二维码生成</h3>
+<p>调用以下函数来根据UUID生成二维码：</p>
+<pre><code>int GetQRUrl(UUIDCallBackData* uuid, int level, int size);</code></pre><p>参数说明：</p>
+<pre><code>- UUIDCallBackData结构体中，`UUIDCallBackData.UUID`为用于生成二维码的UUID，`UUIDCallBackData.QRUrl`为用于接收二维码url的变量
+- level的取值表示二维码抗遮挡等级：0 low、1 medium、2 high、3 highest
+- size的取值表示二维码大小，参考取值为：256</code></pre><p>返回值说明：</p>
+<pre><code>- 返回值为0时，表示生成成功
+- 返回值不为0时，表示失败</code></pre><h3 id="文件下发消息的拉取">文件下发消息的拉取</h3>
+<p>PanlinkAgent会根据UUID向网盘服务器以长轮询的方式查询是否有新的消息发送给对应的UUID。</p>
+<p>收到文件下发消息后，会用以下结构体向开发者传递文件下载消息，一次最多会下发20个文件下载地址，具体可通过<code>PanlinkAgentConfig.PullLimit</code>参数来设置：</p>
+<pre><code>typedef struct  {
+    // 文件名，Golang 字符串编码是 utf-8
+    char* Filename;
+    // 下载地址，从该地址可以得到原始文件
+    char* Dlink;
+}FileInfo;
+
+</code><p><code>typedef struct  {
+    // 错误码，错误码为0时表示结果正常
+    int ErrNo;
+    // 错误消息，当错误码不为0时，可打印错误消息，以便定位错误原因
+    char* ErrMsg;
+    // 文件个数
+    int ListCnt;
+    // 文件列表数组，个数由 ListCnt 指定
+    FileInfo* list;
+}PullCallBackData;</code></p></pre><h3 id="回调函数">回调函数</h3><p></p>
+<p>开发者需要实现两个回调函数，分别用户UUID二维码的更新和文件下载消息的接收。需要注意的是，回调接口传入的参数<code>UUIDCallBackData</code>和<code>PullCallBackData</code>的有效期仅在回调函数内有效，回调函数运行结束后，便会回收对应的内存空间，故对于需要保留的消息，需要拷贝到其他用户变量中。</p>
+<pre><code>typedef void (*UUIDCallBackFn) (UUIDCallBackData*);
+typedef void (*PullCallBackFn) (PullCallBackData*);</code></pre><h4 id="回调函数的注册">回调函数的注册</h4>
+<p>调用以下两个函数分别用于UUID更新和文件下发消息的回调函数注册</p>
+<pre><code>void RegiestUUIDCallBack(UUIDCallBackFn p0);
+void RegiestPullCallBack(PullCallBackFn p0);</code></pre><h4 id="回调函数参考实现">回调函数参考实现</h4>
+<p>需要注意的是，在 UUIDCallBackData 中，UUIDCallBackData.QRUrl 不会自动返回，需要调用 GetQRUrl 函数来生成业务上需要的指定冗余度和大小的二维码。QRUrl的空间回收需要业务上自己实现。</p>
+<pre><code>void uuidCallBackFn(UUIDCallBackData* data) {
+    cout &lt;&lt; "uuidCallBackFn called " &lt;&lt; endl;
+
+<pre><code class="hljs undefined">int ret = GetQRUrl(data, 1, 256);
+if (ret != 0) {
+  char * err = LastError();
+  if (err != NULL) {
+    cout &lt;&lt; "GetQRUrl err, code=" &lt;&lt; ret &lt;&lt; " err=" &lt;&lt; err &lt;&lt; endl;
+    free(err);
+  } else {
+    cout &lt;&lt; "GetQRUrl err, code=" &lt;&lt; ret &lt;&lt; " err=null" &lt;&lt; endl;
+  }
+}
+
+cout &lt;&lt; "errno: " &lt;&lt; data-&gt;ErrNo &lt;&lt; endl;
+cout &lt;&lt; "errmsg: " &lt;&lt; data-&gt;ErrMsg &lt;&lt; endl;
+cout &lt;&lt; "uuid: " &lt;&lt; data-&gt;UUID &lt;&lt; endl;
+cout &lt;&lt; "qrurl: " &lt;&lt; data-&gt;QRUrl &lt;&lt; endl;
+cout &lt;&lt; "ttl: " &lt;&lt; data-&gt;TTL &lt;&lt; endl;
+cout &lt;&lt; "expireat: " &lt;&lt; data-&gt;ExpireAt &lt;&lt; endl;
+
+if (data-&gt;QRUrl != NULL){
+  free(data-&gt;QRUrl);
+}</code></pre><p>}</p>
+</code><p><code>void pullCallBackFn(PullCallBackData* data) {
+    cout &lt;&lt; "pullCallBackFn called " &lt;&lt; endl;
+    cout &lt;&lt; "errno: " &lt;&lt; data-&gt;ErrNo &lt;&lt; endl;
+    cout &lt;&lt; "errmsg: " &lt;&lt; data-&gt;ErrMsg &lt;&lt; endl;
+    cout &lt;&lt; "listCnt: " &lt;&lt; data-&gt;ListCnt &lt;&lt; endl;
+    for (int i = 0; i &lt; data-&gt;ListCnt; ++i) {
+      cout &lt;&lt; "list[" &lt;&lt; i &lt;&lt;  "].Filename: " &lt;&lt; data-&gt;list[i].Filename &lt;&lt; endl;
+      cout &lt;&lt; "list[" &lt;&lt; i &lt;&lt;  "].Dlink: " &lt;&lt; data-&gt;list[i].Dlink &lt;&lt; endl;
+    }
+}</code></p></pre><h3 id="异常处理">异常处理</h3><p></p>
+<p>接口调用时，返回值不为0，表示遇到异常，获取异常的描述信息可以通过LastError()接口，该接口返回的字符串需要业务方自行回收内存空间。</p>
+<p>参考示例：</p>
+<pre><code>PanlinkAgentConfig config;
+int ret = InitPanlinkAgent(&amp;config);
+  if (ret != 0){
+    char * err = LastError();
+    if (err != NULL) {
+      cout &lt;&lt; "init panlink agent err, code=" &lt;&lt; ret &lt;&lt; " err=" &lt;&lt; err &lt;&lt; endl;
+      free(err);
+    } else {
+      cout &lt;&lt; "init panlink agent err, code=" &lt;&lt; ret &lt;&lt; " err=null" &lt;&lt; endl;
+    }
+
+<pre><code class="hljs undefined">return ret;</code></pre></code><p><code>  }</code></p></pre><h3 id="停止agent">停止Agent</h3><p></p>
+<p>需要提供UUID更新和文件下发消息接收时，调用以下函数：</p>
+<pre><code>int StopAgent();</code></pre><h2 id="panlinkclient">PanlinkClient</h2>
+<p>暂不直接提供PanlinkClient的调用，优先使用PanlinkAgent来实现。</p>
+<h2 id="调试">调试</h2>
+<p>Panlink SDK内嵌了日志库，可以通过以下两个函数来设置日志级别和日志文件输出位置，以便于调试。在没有设置<code>SetLogPath</code>时，日志会输出到标准错误输出（Stderr）。当需要关闭日志输出时，可以将日志级别设置为：LEVEL_EMERGENCY</p>
+<pre><code>void SetLogLevel(int p0);
+void SetLogPath(char* p0);</code></pre><h3 id="日志级别">日志级别</h3>
+<p>需要调试时，可以将日志级别设为 LEVEL_DEBUG</p>
+<pre><code>const int LEVEL_EMERGENCY = 0;
+const int LEVEL_ALERT = 1;
+const int LEVEL_CRITICAL = 2;
+const int LEVEL_ERROR = 3;
+const int LEVEL_WARNING = 4;
+const int LEVEL_NOTICE = 6;
+const int LEVEL_INFO = 7;
+const int LEVEL_DEBUG = 8;
+const int LEVEL_VERBOSE = 9;</code></pre><h2 id="example">EXAMPLE</h2>
+<p>example/host.cpp</p>
+</div></div>

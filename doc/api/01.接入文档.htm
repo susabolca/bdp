@@ -1,0 +1,48 @@
+<div data-v-446853f1="" class="open-body__right markdown-body"><div data-v-e39afd5e="" data-v-446853f1="" class="document"><h2 id="授权流程">授权流程</h2>
+<p>第三方通过OAuth2.0协议访问网盘服务。开发者需要根据自己的应用场景，选择合适的授权流程。</p>
+<p>(网盘小程序开发者请参考<a href="https://pan.baidu.com/union/document/guide"><font color="blue">小程序接入文档</font></a>)</p>
+<h3 id="server端">server端</h3>
+<p>授权码模式(authorization code)。如果第三方有自己的server，推荐使用。具体流程参考: <a href="https://developer.baidu.com/newwiki/dev-wiki/?t=1518338594397"><strong><font color="blue">百度账号接入指南</font></strong></a>。</p>
+<p><strong>授权示例</strong></p>
+<pre><code class="language-shell">1、获取code
+https://openapi.baidu.com/oauth/2.0/authorize?response_type=code&amp;client_id=123&amp;redirect_uri=oob&amp;scope=basic,netdisk&amp;display=tv&amp;qrcode=1&amp;force_login=1
+
+</code><p><code class="language-shell">2、使用code换取access_token
+<a href="https://openapi.baidu.com/oauth/2.0/token?grant_type=authorization_code&amp;code=75f41ffb5ebac180652f213fa1c30ee8&amp;client_id=123&amp;client_secret=456&amp;redirect_uri=oob">https://openapi.baidu.com/oauth/2.0/token?grant_type=authorization_code&amp;code=75f41ffb5ebac180652f213fa1c30ee8&amp;client_id=123&amp;client_secret=456&amp;redirect_uri=oob</a></code></p></pre><p></p>
+<h3 id="移动端">移动端</h3>
+<p>简化模式(implicit grant)，跳过授权码这个步骤，直接获取access_token。适合没有server的移动端接入。</p>
+<p>备注：该模式下无法获取refresh_token。</p>
+<p><strong>授权示例</strong></p>
+<pre><code class="language-shell">1、引导用户授权
+https://openapi.baidu.com/oauth/2.0/authorize?response_type=token&amp;client_id=YOUR_CLIENT_ID&amp;redirect_uri=YOUR_REGISTERED_REDIRECT_URI&amp;scope=basic,netdisk&amp;display=popup&amp;state=xxx
+
+</code><p><code class="language-shell">2、如果用户同意授权,页面跳转至 YOUR_REGISTERED_REDIRECT_URI， 在Fragment中追加如下参数
+YOUR_REGISTERED_REDIRECT_URI#access_token=Your_AccessToken&amp;expires_in=86400&amp;scope=basic,netdisk&amp;session_key=ANXxSNjwQDugf8615OnqeikRMu2bKaXCdlLxn&amp;session_secret=248APxvxjCZ0VEC43EYrvxqaK4oZExMB&amp;state=xxx</code></p></pre><p></p>
+<p><strong>授权备注</strong></p>
+<p>1、如果需要获取网盘授权，需要在请求<font color="blue"><a href="http://openapi.baidu.com/oauth/2.0/authorize">http://openapi.baidu.com/oauth/2.0/authorize</a></font>时指定scope=basic,netdisk。</p>
+<p>2、server端登录授权页如果展示二维码，需要在请求<font color="blue"><a href="http://openapi.baidu.com/oauth/2.0/authorize">http://openapi.baidu.com/oauth/2.0/authorize</a></font>时增加一个参数qrcode=1。</p>
+<p>3、对于硬件厂商，需要在请求<font color="blue"><a href="http://openapi.baidu.com/oauth/2.0/authorize?response_type=code">http://openapi.baidu.com/oauth/2.0/authorize?response_type=code</a></font>时，多增加一个参数device_id，该device_id为设备注册接口返回的device_id。(参考<a href="https://pan.baidu.com/union/document/equipment"><font color="blue">开放平台设备管理接口文档</font></a>)</p>
+<p>4、对于NAS硬件厂商，授权流程参考<a href="https://pan.baidu.com/union/document/nasAbility"><font color="blue">开放平台NAS能力接口文档</font></a>。</p>
+<h2 id="认证方式">认证方式</h2>
+<p>第三方使用百度开放平台下发的access_token，通过https方式访问网盘服务。</p>
+<h2 id="参数编码">参数编码</h2>
+<p>1、响应参数为JSON格式、UTF-8编码。</p>
+<p>2、对于POST/PUT请求，默认为表单方式提交，即Content-Type: application/x-www-form-urlencoded;charset=utf-8，具体形式可参考对应接口文档。</p>
+<h2 id="响应格式">响应格式</h2>
+<p>正确响应</p>
+<pre><code class="language-json"># errno=0，表示请求成功
+{
+    errno: 0,
+    errmsg: '',
+    request_id: xxx,
+}</code></pre>
+<p>错误响应</p>
+<pre><code class="language-json"># errno != 0，表示请求失败，具体含义参考对应接口文档
+{
+    errno: xxx,
+    errmsg: 'xxx',
+    request_id: xxx,
+}</code></pre>
+<h2 id="错误码">错误码</h2>
+<p>通用错误码参考<a href="https://pan.baidu.com/union/document/error"><font color="blue">开放平台通用错误码</font></a>，其他错误码参考相关接口文档。</p>
+</div></div>

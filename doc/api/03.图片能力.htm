@@ -1,0 +1,891 @@
+<div data-v-446853f1="" class="open-body__right markdown-body"><div data-v-e39afd5e="" data-v-446853f1="" class="document"><h2 id="通用参数">通用参数</h2>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>access_token</td>
+<td>string</td>
+<td>是</td>
+<td>授权凭证</td>
+</tr>
+</tbody></table>
+<p>备注：</p>
+<p>1、所有接口都要带</p>
+<p>2、通用参数必须放在URL里</p>
+<h2 id="基础服务">基础服务</h2>
+<h3 id="按照上传时间获取文件列表">按照上传时间获取文件列表</h3>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">GET https://pan.baidu.com/rest/2.0/xpan/multimedia?method=recentlist</code></pre>
+<p>备注：</p>
+<p>1、此接口有频率控制，单个用户60秒60次</p>
+<p>2、网盘目前支持的缩略图格式如下</p>
+<pre><code class="language-shell">"jpg", "jpeg", "png", "gif", "bmp", "webp", "heic", "heif", "avci", "livp"</code></pre>
+<p>如果图片格式不在其中，会被过滤</p>
+<p><strong>请求参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>category</td>
+<td>int</td>
+<td>是</td>
+<td>文件类型，1 视频、2 音频、3 图片、4 文档、5 应用、6 其他、7 种子</td>
+</tr>
+<tr>
+<td>start</td>
+<td>int</td>
+<td>否</td>
+<td>查询起点，默认0</td>
+</tr>
+<tr>
+<td>limit</td>
+<td>int</td>
+<td>否</td>
+<td>查询数目，默认值为1000，最大值为10000</td>
+</tr>
+<tr>
+<td>sortby</td>
+<td>string</td>
+<td>否</td>
+<td>排序字段<br>time按修改时间排序<br>name按文件名称排序<br>size按文件大小排序<br>不传表示按上传时间排序</td>
+</tr>
+<tr>
+<td>order</td>
+<td>string</td>
+<td>否</td>
+<td>asc、desc(默认)</td>
+</tr>
+<tr>
+<td>stime</td>
+<td>int</td>
+<td>否</td>
+<td>查询起始时间戳，如传入，则返回这个时间戳之后的图片集合</td>
+</tr>
+<tr>
+<td>etime</td>
+<td>int</td>
+<td>否</td>
+<td>查询结束时间戳，如传入，则返回这个时间戳之前的图片集合</td>
+</tr>
+<tr>
+<td>resolution</td>
+<td>string</td>
+<td>否</td>
+<td>是否需要图片原始分辨率，on 需要， off 不需要，默认off</td>
+</tr>
+</tbody></table>
+<p>备注：如果resolution=on，则limit最大取100，且接口耗时会增加</p>
+<p><strong>响应参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>has_more</td>
+<td>int</td>
+<td>1 表示还有数据，0表示没有数据</td>
+</tr>
+<tr>
+<td>cursor</td>
+<td>int</td>
+<td>下一次的start</td>
+</tr>
+<tr>
+<td>list</td>
+<td>json array</td>
+<td>列表</td>
+</tr>
+</tbody></table>
+<p>array内容</p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>filename</td>
+<td>string</td>
+<td>文件名</td>
+</tr>
+<tr>
+<td>fs_id</td>
+<td>uint64</td>
+<td>文件在云端的唯一标识ID</td>
+</tr>
+<tr>
+<td>md5</td>
+<td>string</td>
+<td>文件MD5值</td>
+</tr>
+<tr>
+<td>parent_path</td>
+<td>string</td>
+<td>文件所在目录</td>
+</tr>
+<tr>
+<td>server_ctime</td>
+<td>int</td>
+<td>文件上传时间</td>
+</tr>
+<tr>
+<td>server_mtime</td>
+<td>int</td>
+<td>文件修改时间</td>
+</tr>
+<tr>
+<td>size</td>
+<td>uint64</td>
+<td>文件大小，单位B</td>
+</tr>
+<tr>
+<td>width</td>
+<td>int</td>
+<td>文件原始宽度</td>
+</tr>
+<tr>
+<td>height</td>
+<td>int</td>
+<td>文件原始高度</td>
+</tr>
+<tr>
+<td>thumbs</td>
+<td>json</td>
+<td>缩略图地址，1个icon，三个不同尺寸图片的缩略图地址</td>
+</tr>
+</tbody></table>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell">curl "https://pan.baidu.com/rest/2.0/xpan/multimedia?method=recentlist&amp;=123&amp;channel=123&amp;access_token=123&amp;category=3&amp;start=10&amp;limit=2&amp;resolution=on" -H "User-Agent: pan.baidu.com"</code></pre>
+<p><strong>响应示例</strong></p>
+<pre><code class="language-json">{
+    "cursor": 12,
+    "errmsg": "succ",
+    "errno": 0,
+    "has_more": 1,
+    "list": [
+        {
+            "filename": "2018-11-03 170347.png",
+            "fs_id": 628176124867912,
+            "height": 1334,
+            "md5": "a28d81b642c036afdf93baa4dceb36b5",
+            "parent_path": "/dahao_share2",
+            "server_ctime": 1541593676,
+            "server_mtime": 1541593676,
+            "size": 132898,
+            "thumbs": {
+                "icon": "https://thumbnail0.baidupcs.com/thumbnail/a28d81b642c036afdf93baa4dceb36b5?fid=3389535607-250528-628176124867912&amp;rt=pr&amp;sign=FDTAER-DCb740ccc5511e5e8fedcff06b081203-GairIpJQM%2FnW8MXAwtyo0uFoFUs%3D&amp;expires=8h&amp;chkbd=0&amp;chkv=0&amp;dp-logid=1883219242572507968&amp;dp-callid=0&amp;time=1544101200&amp;size=c60_u60&amp;quality=100&amp;vuk=3389535607&amp;ft=image",
+                "url1": "https://thumbnail0.baidupcs.com/thumbnail/a28d81b642c036afdf93baa4dceb36b5?fid=3389535607-250528-628176124867912&amp;rt=pr&amp;sign=FDTAER-DCb740ccc5511e5e8fedcff06b081203-GairIpJQM%2FnW8MXAwtyo0uFoFUs%3D&amp;expires=8h&amp;chkbd=0&amp;chkv=0&amp;dp-logid=1883219242572507968&amp;dp-callid=0&amp;time=1544101200&amp;size=c140_u90&amp;quality=100&amp;vuk=3389535607&amp;ft=image",
+                "url2": "https://thumbnail0.baidupcs.com/thumbnail/a28d81b642c036afdf93baa4dceb36b5?fid=3389535607-250528-628176124867912&amp;rt=pr&amp;sign=FDTAER-DCb740ccc5511e5e8fedcff06b081203-GairIpJQM%2FnW8MXAwtyo0uFoFUs%3D&amp;expires=8h&amp;chkbd=0&amp;chkv=0&amp;dp-logid=1883219242572507968&amp;dp-callid=0&amp;time=1544101200&amp;size=c360_u270&amp;quality=100&amp;vuk=3389535607&amp;ft=image",
+                "url3": "https://thumbnail0.baidupcs.com/thumbnail/a28d81b642c036afdf93baa4dceb36b5?fid=3389535607-250528-628176124867912&amp;rt=pr&amp;sign=FDTAER-DCb740ccc5511e5e8fedcff06b081203-GairIpJQM%2FnW8MXAwtyo0uFoFUs%3D&amp;expires=8h&amp;chkbd=0&amp;chkv=0&amp;dp-logid=1883219242572507968&amp;dp-callid=0&amp;time=1544101200&amp;size=c850_u580&amp;quality=100&amp;vuk=3389535607&amp;ft=image"
+            },
+            "width": 750
+        },
+    ],
+    "request_id": "1883154784558350633"
+}</code></pre>
+<p><strong>错误码说明</strong></p>
+<table>
+<thead>
+<tr>
+<th>错误码</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>31034</td>
+<td>命中接口频控</td>
+</tr>
+</tbody></table>
+<h3 id="获取用户智能分类tag">获取用户智能分类tag</h3>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">GET https://pan.baidu.com/rest/2.0/xpan/imageproc?method=gettags</code></pre>
+<p><strong>请求参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>key</td>
+<td>string</td>
+<td>是</td>
+<td>固定值tag</td>
+</tr>
+<tr>
+<td>type</td>
+<td>int</td>
+<td>是</td>
+<td>tag类型，1 事物，2 地点</td>
+</tr>
+</tbody></table>
+<p><strong>响应参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>cover_fid</td>
+<td>string</td>
+<td>封面图片的fs_id</td>
+</tr>
+<tr>
+<td>type</td>
+<td>int</td>
+<td>1事物，2地点</td>
+</tr>
+<tr>
+<td>tag_id</td>
+<td>int</td>
+<td>分类id</td>
+</tr>
+<tr>
+<td>ctime</td>
+<td>int</td>
+<td>分类创建时间</td>
+</tr>
+<tr>
+<td>mtime</td>
+<td>int</td>
+<td>分类修改时间</td>
+</tr>
+<tr>
+<td>tag_name</td>
+<td>string</td>
+<td>分类名称</td>
+</tr>
+<tr>
+<td>is_show</td>
+<td>int</td>
+<td>1 该分类可以显示 0 该分类不可以显示</td>
+</tr>
+<tr>
+<td>is_search</td>
+<td>int</td>
+<td>1 该分类可以搜索 0 该分类不可以搜索</td>
+</tr>
+<tr>
+<td>thumb</td>
+<td>string</td>
+<td>封面图片的缩略图地址</td>
+</tr>
+</tbody></table>
+<p>备注：可能会出现某个tag没有thumb字段，此问题正在修复中。</p>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell">curl "https://pan.baidu.com/rest/2.0/xpan/imageproc?method=gettags&amp;access_token=123&amp;key=tag&amp;type=2" -H "User-Agent: pan.baidu.com"</code></pre>
+<p><strong>响应示例</strong></p>
+<pre><code class="language-json">{
+  errno: 0,
+  request_id: 8749238,
+  list: [
+    {
+      cover_fid: "733882755993208",
+      type: 2,
+      tag_id: 100131,
+      ctime: 1541229787,
+      mtime: 1545968920,
+      status: 0,
+      count: 2,
+      tag_name: "北京市",
+      is_show: 1,
+      is_search: 1,
+      thumb: "https://thumbnail0.baidupcs.com/thumbnail/2335bfc71862a49a133ce92dde51f907?fid=3389535607-250528-733882755993208&amp;time=1552201200&amp;rt=yt&amp;sign=FDTAER-DCb740ccc5511e5e8fedcff06b081203-%2BkrYV6WNI8nAbRagDl1Roh79Woc%3D&amp;expires=24h&amp;chkv=0&amp;chkbd=0&amp;chkpc=&amp;dp-logid=8749238&amp;dp-callid=0&amp;size=c200_u200&amp;quality=100&amp;vuk=-&amp;ft=video"
+    },
+    {
+      cover_fid: "811192132528860",
+      type: 2,
+      tag_id: 74003,
+      ctime: 1534488824,
+      mtime: 1534488824,
+      status: 0,
+      count: 1,
+      tag_name: "美国",
+      is_show: 1,
+      is_search: 1
+    }
+  ]
+}</code></pre>
+<h3 id="根据关键字检索图片">根据关键字检索图片</h3>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">GET https://pan.baidu.com/rest/2.0/xpan/imageproc?method=search</code></pre>
+<p><strong>请求参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>search_type</td>
+<td>int</td>
+<td>是</td>
+<td>1 tag_id检索，2 汉字检索</td>
+</tr>
+<tr>
+<td>keyword</td>
+<td>string</td>
+<td>是</td>
+<td>检索关键字，汉字需要urlencode</td>
+</tr>
+<tr>
+<td>start</td>
+<td>int</td>
+<td>是</td>
+<td>查询起点</td>
+</tr>
+<tr>
+<td>limit</td>
+<td>int</td>
+<td>是</td>
+<td>查询数目</td>
+</tr>
+<tr>
+<td>format</td>
+<td>int</td>
+<td>否</td>
+<td>是否格式化</td>
+</tr>
+<tr>
+<td>sizes</td>
+<td>string</td>
+<td>否</td>
+<td>自定义缩略图大小，最多三个，例:sizes=c200_u200,c300_u300,c400_u400，如果没有默认按照c200_u200返回缩略图</td>
+</tr>
+</tbody></table>
+<p><strong>响应参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>category</td>
+<td>int</td>
+<td>文件类型，1 视频、2 音频、3 图片、4 文档、5 应用、6 其他、7 种子</td>
+</tr>
+<tr>
+<td>fs_id</td>
+<td>string</td>
+<td>文件在网盘中的临时唯一标识id</td>
+</tr>
+<tr>
+<td>parent_path</td>
+<td>string</td>
+<td>文件所在目录</td>
+</tr>
+<tr>
+<td>date_taken</td>
+<td>string</td>
+<td>拍摄时间戳</td>
+</tr>
+<tr>
+<td>year</td>
+<td>string</td>
+<td>拍摄年份</td>
+</tr>
+<tr>
+<td>month</td>
+<td>string</td>
+<td>拍摄月份</td>
+</tr>
+<tr>
+<td>day</td>
+<td>string</td>
+<td>拍摄日期</td>
+</tr>
+<tr>
+<td>path</td>
+<td>string</td>
+<td>文件路径</td>
+</tr>
+<tr>
+<td>md5</td>
+<td>string</td>
+<td>文件MD5</td>
+</tr>
+<tr>
+<td>size</td>
+<td>int</td>
+<td>文件大小</td>
+</tr>
+<tr>
+<td>server_ctime</td>
+<td>int</td>
+<td>文件创建时间</td>
+</tr>
+<tr>
+<td>server_mtime</td>
+<td>int</td>
+<td>文件修改时间</td>
+</tr>
+<tr>
+<td>isdelete</td>
+<td>int</td>
+<td>0 文件存在，1 文件被删除</td>
+</tr>
+<tr>
+<td>server_filename</td>
+<td>string</td>
+<td>文件名称</td>
+</tr>
+<tr>
+<td>resolution</td>
+<td>string</td>
+<td>文件分辨率信息</td>
+</tr>
+<tr>
+<td>orientation</td>
+<td>string</td>
+<td>图片方向</td>
+</tr>
+<tr>
+<td>thumb</td>
+<td>string</td>
+<td>图片缩略图地址</td>
+</tr>
+</tbody></table>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell">curl "https://pan.baidu.com/rest/2.0/xpan/imageproc?method=search&amp;access_token=123&amp;search_type=1&amp;keyword=100131&amp;start=0&amp;limit=10" -H "User-Agent: pan.baidu.com"</code></pre>
+<p><strong>响应示例</strong></p>
+<pre><code class="language-json">{
+    "errno": 0,
+    "request_id": 2046874322,
+    "has_more": false,
+    "list": [
+        {
+            "category": 3,
+            "fs_id": "705849749683965",
+            "parent_path": "/dahao_share2",
+            "date_taken": "1540617700",
+            "year": "2018",
+            "month": "10",
+            "day": "27",
+            "path": "/dahao_share2/2018-10-27 132140.jpg",
+            "md5": "8630382d75c0fc42d70f6f76cbe29000",
+            "size": 1633221,
+            "server_ctime": 1541229940,
+            "server_mtime": 1541229940,
+            "isdelete": 0,
+            "server_filename": "2018-10-27 132140.jpg",
+            "resolution": "width:4032,height:3024",
+            "orientation": "TopLeftOrientation",
+            "thumb": "http://thumbnail0.baidupcs.com/thumbnail/8630382d75c0fc42d70f6f76cbe29000?fid=3389535607-250528-705849749683965&amp;time=1544101200&amp;rt=yt&amp;sign=FDTAER-DCb740ccc5511e5e8fedcff06b081203-2I7db7VIyVj73p2i767%2BoJ8fc4E%3D&amp;expires=24h&amp;chkv=0&amp;chkbd=0&amp;chkpc=&amp;dp-logid=2046874322&amp;dp-callid=0&amp;size=c200_u200&amp;quality=90&amp;vuk=-&amp;ft=video"
+        }
+    ]
+}</code></pre>
+<h2 id="相册服务">相册服务</h2>
+<p><strong>接入流程</strong></p>
+<ol>
+<li>获取access_token，参考<a href="https://pan.baidu.com/union/document/entrance"><font color="blue">开放平台接入文档</font></a></li>
+<li>设备注册、设备绑定，参考<a href="https://pan.baidu.com/union/document/equipment"><font color="blue">开放平台设备管理接口文档</font></a></li>
+<li>使用 access_token + deviceId 请求相册服务</li>
+</ol>
+<p><strong>通用参数</strong></p>
+<p>在已有通用参数的基础上，再增加两个通用参数</p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>device_id</td>
+<td>string</td>
+<td>是</td>
+<td>设备ID，设备注册接口下发</td>
+</tr>
+<tr>
+<td>category</td>
+<td>int</td>
+<td>是</td>
+<td>文件类型，1 视频、2 音频、3 图片、4 文档、5 应用、6 其他、7 种子</td>
+</tr>
+</tbody></table>
+<p>再次备注：</p>
+<p>1、所有接口都要带</p>
+<p>2、通用参数必须放在URL里</p>
+<h3 id="获取待添加的文件列表">获取待添加的文件列表</h3>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">GET https://pan.baidu.com/rest/2.0/xpan/multimedia?method=selectlist</code></pre>
+<p>备注：针对图片，返回结果按拍摄时间倒序排列</p>
+<p><strong>请求参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ct_id</td>
+<td>uint64</td>
+<td>是</td>
+<td>集合id，0 新建集合，3 图片默认集合</td>
+</tr>
+<tr>
+<td>start</td>
+<td>int</td>
+<td>否</td>
+<td>查询起点，默认0</td>
+</tr>
+<tr>
+<td>limit</td>
+<td>int</td>
+<td>否</td>
+<td>查询数目，最大100，默认100</td>
+</tr>
+</tbody></table>
+<p><strong>响应参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>has_more</td>
+<td>int</td>
+<td>1表示还有数据，0表示没有数据</td>
+</tr>
+<tr>
+<td>cursor</td>
+<td>int</td>
+<td>下一次的start</td>
+</tr>
+<tr>
+<td>file_count</td>
+<td>int</td>
+<td>ct_id目前的文件个数</td>
+</tr>
+<tr>
+<td>marked</td>
+<td>int</td>
+<td>该图片是否在集合ct_id中，0 不在，在</td>
+</tr>
+</tbody></table>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell">curl "https://pan.baidu.com/rest/2.0/xpan/multimedia?method=selectlist&amp;access_token=123&amp;device_id=123&amp;category=3&amp;ct_id=0&amp;start=0&amp;limit=1" -H "User-Agent: pan.baidu.com"</code></pre>
+<p><strong>响应示例</strong></p>
+<pre><code class="language-json">{
+    "cursor": 1,
+    "errmsg": "succ",
+    "errno": 0,
+    "file_count": 0,
+    "has_more": 1,
+    "list": [
+        {
+            "category": 3,
+            "date_taken": 1541235827,
+            "day": "03",
+            "fs_id": 628176124867912,
+            "height": 1334,
+            "isdelete": 0,
+            "marked": 0,
+            "md5": "a28d81b642c036afdf93baa4dceb36b5",
+            "month": "11",
+            "parent_path": "/dahao_share2",
+            "path": "/dahao_share2/2018-11-03 170347.png",
+            "resolution": "width:750,height:1334",
+            "server_ctime": 1541593676,
+            "server_filename": "2018-11-03 170347.png",
+            "server_mtime": 1541593676,
+            "size": 132898,
+            "thumb": "http://thumbnail0.baidupcs.com/thumbnail/a28d81b642c036afdf93baa4dceb36b5?fid=3389535607-250528-628176124867912&amp;time=1544148000&amp;rt=yt&amp;sign=FDTAER-DCb740ccc5511e5e8fedcff06b081203-1CLEjTJ%2BE6x%2Bc8nb6uurN2oy0aw%3D&amp;expires=24h&amp;chkv=0&amp;chkbd=0&amp;chkpc=&amp;dp-logid=2367828998&amp;dp-callid=0&amp;size=c200_u200&amp;quality=91&amp;vuk=-&amp;ft=video",
+            "width": 750,
+            "year": "2018"
+        }
+    ],
+    "request_id": "2368319331266489905"
+}</code></pre>
+<h3 id="添加文件到集合">添加文件到集合</h3>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">POST https://pan.baidu.com/rest/2.0/xpan/multimedia?method=additem</code></pre>
+<p><strong>请求参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ct_id</td>
+<td>uint64</td>
+<td>是</td>
+<td>集合id，0 新建集合，3 图片默认集合</td>
+</tr>
+<tr>
+<td>fs_id</td>
+<td>json array</td>
+<td>是</td>
+<td>文件fsid数组，上限100</td>
+</tr>
+</tbody></table>
+<p><strong>响应参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>succ_count</td>
+<td>int</td>
+<td>添加成功的文件个数</td>
+</tr>
+</tbody></table>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell">curl "https://pan.baidu.com/rest/2.0/xpan/multimedia?method=additem&amp;access_token=123&amp;device_id=123&amp;category=3" -d 'ct_id=3&amp;fs_id=[123,456]' -H "User-Agent: pan.baidu.com"</code></pre>
+<p><strong>响应示例</strong></p>
+<pre><code class="language-json">{
+  "errmsg": "succ",
+  "errno": 0,
+  "request_id": "3141638741106371",
+  "succ_count": 2
+}</code></pre>
+<p><strong>错误码说明</strong></p>
+<table>
+<thead>
+<tr>
+<th>错误码</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>42202</td>
+<td>文件个数超过集合容量</td>
+</tr>
+<tr>
+<td>42203</td>
+<td>集合不存在</td>
+</tr>
+<tr>
+<td>42204</td>
+<td>超出批量操作限制</td>
+</tr>
+<tr>
+<td>42210</td>
+<td>部分文件添加失败</td>
+</tr>
+</tbody></table>
+<h3 id="获取集合中文件的fsid">获取集合中文件的fsid</h3>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">GET https://pan.baidu.com/rest/2.0/xpan/multimedia?method=filterlist</code></pre>
+<p><strong>请求参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ct_id</td>
+<td>uint64</td>
+<td>是</td>
+<td>集合ID，图片默认集合ID为3</td>
+</tr>
+</tbody></table>
+<p><strong>响应参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>list</td>
+<td>json array</td>
+<td>fsid数组</td>
+</tr>
+</tbody></table>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell">curl "https://pan.baidu.com/rest/2.0/xpan/multimedia?method=filterlist&amp;access_token=123&amp;device_id=123&amp;category=3&amp;ct_id=3" -H "User-Agent: pan.baidu.com"</code></pre>
+<p><strong>响应示例</strong></p>
+<pre><code class="language-json">{
+  "errmsg": "succ",
+  "errno": 0,
+  "list": [
+    16802783039047,
+    267797176437465,
+    551904480806803
+  ],
+  "request_id": "37391113777523008"
+}</code></pre>
+<h3 id="获取集合中的文件列表">获取集合中的文件列表</h3>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">GET https://pan.baidu.com/rest/2.0/xpan/multimedia?method=itemlist</code></pre>
+<p>备注：针对图片，返回结果按拍摄时间倒序排列</p>
+<p><strong>请求参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ct_id</td>
+<td>uint64</td>
+<td>是</td>
+<td>集合ID，图片默认集合ID为3</td>
+</tr>
+<tr>
+<td>start</td>
+<td>int</td>
+<td>否</td>
+<td>查询起点，默认 0</td>
+</tr>
+<tr>
+<td>limit</td>
+<td>int</td>
+<td>否</td>
+<td>查询数目，最大100，默认100</td>
+</tr>
+<tr>
+<td>thumbnail</td>
+<td>string</td>
+<td>否</td>
+<td>是否需要图片缩略图地址，on 需要，off 不需要，默认off</td>
+</tr>
+</tbody></table>
+<p><strong>响应参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>has_more</td>
+<td>int</td>
+<td>1 表示还有数据，0表示没有数据</td>
+</tr>
+</tbody></table>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell">curl "https://pan.baidu.com/rest/2.0/xpan/multimedia?method=itemlist&amp;access_token=123&amp;device_id=123&amp;category=3&amp;ct_id=3&amp;start=10&amp;limit=2&amp;thumbnail=on" -H "User-Agent: pan.baidu.com"</code></pre>
+<p><strong>响应示例</strong></p>
+<pre><code class="language-json">{
+  "errmsg": "succ",
+  "errno": 0,
+  "has_more": 1,
+  "list": [
+    {
+      "category": 3,
+      "date_taken": 1540652902,
+      "day": "27",
+      "fs_id": 208552143961418,
+      "height": 4000,
+      "isdelete": 0,
+      "md5": "f2bb6866b8caea5cfea40d65b967117f",
+      "month": "10",
+      "parent_path": "/baidu/坡峰岭/风景/HXM_5376_副本.jpg",
+      "path": "/baidu/坡峰岭/风景/HXM_5376_副本.jpg",
+      "resolution": "width:6000,height:4000",
+      "server_ctime": 1540656896,
+      "server_filename": "HXM_5376_副本.jpg",
+      "server_mtime": 1541146589,
+      "size": 7390713,
+      "thumbs": {
+        "icon": "https://thumbnail0.baidupcs.com/thumbnail/f2bb6866b8caea5cfea40d65b967117f?fid=591271737-250528-208552143961418\u0026rt=pr\u0026sign=FDTAER-DCb740ccc5511e5e8fedcff06b081203-4kcruc5ku8zGokBwn%2FYa%2BSLbe8I%3D\u0026expires=8h\u0026chkbd=0\u0026chkv=0\u0026dp-logid=308738744418221856\u0026dp-callid=0\u0026time=1544601600\u0026size=c60_u60\u0026quality=100\u0026vuk=591271737\u0026ft=image",
+        "url1": "https://thumbnail0.baidupcs.com/thumbnail/f2bb6866b8caea5cfea40d65b967117f?fid=591271737-250528-208552143961418\u0026rt=pr\u0026sign=FDTAER-DCb740ccc5511e5e8fedcff06b081203-4kcruc5ku8zGokBwn%2FYa%2BSLbe8I%3D\u0026expires=8h\u0026chkbd=0\u0026chkv=0\u0026dp-logid=308738744418221856\u0026dp-callid=0\u0026time=1544601600\u0026size=c140_u90\u0026quality=100\u0026vuk=591271737\u0026ft=image",
+        "url2": "https://thumbnail0.baidupcs.com/thumbnail/f2bb6866b8caea5cfea40d65b967117f?fid=591271737-250528-208552143961418\u0026rt=pr\u0026sign=FDTAER-DCb740ccc5511e5e8fedcff06b081203-4kcruc5ku8zGokBwn%2FYa%2BSLbe8I%3D\u0026expires=8h\u0026chkbd=0\u0026chkv=0\u0026dp-logid=308738744418221856\u0026dp-callid=0\u0026time=1544601600\u0026size=c360_u270\u0026quality=100\u0026vuk=591271737\u0026ft=image",
+        "url3": "https://thumbnail0.baidupcs.com/thumbnail/f2bb6866b8caea5cfea40d65b967117f?fid=591271737-250528-208552143961418\u0026rt=pr\u0026sign=FDTAER-DCb740ccc5511e5e8fedcff06b081203-4kcruc5ku8zGokBwn%2FYa%2BSLbe8I%3D\u0026expires=8h\u0026chkbd=0\u0026chkv=0\u0026dp-logid=308738744418221856\u0026dp-callid=0\u0026time=1544601600\u0026size=c850_u580\u0026quality=100\u0026vuk=591271737\u0026ft=image"
+      },
+      "width": 6000,
+      "year": "2018"
+    },
+  ],
+  "request_id": "308036053426460639"
+}</code></pre>
+<h3 id="删除集合中的文件">删除集合中的文件</h3>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">POST https://pan.baidu.com/rest/2.0/xpan/multimedia?method=delitem</code></pre>
+<p><strong>请求参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ct_id</td>
+<td>uint64</td>
+<td>是</td>
+<td>集合id，0 新建集合，3 图片默认集合</td>
+</tr>
+<tr>
+<td>fs_id</td>
+<td>json array</td>
+<td>是</td>
+<td>文件fsid数组，上限100</td>
+</tr>
+</tbody></table>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell">curl "https://pan.baidu.com/rest/2.0/xpan/multimedia?method=delitem&amp;access_token=123&amp;device_id=123&amp;category=3" -d 'ct_id=3&amp;fs_id=[123,456]' -H "User-Agent: pan.baidu.com"</code></pre>
+<h2 id="附录">附录</h2>
+<h3 id="缩略图">缩略图</h3>
+<p>用户将一张图片上传到网盘之后，网盘会异步的生成该图片的缩略图，生成时间一般在30min以内。</p>
+<p><strong>格式限制</strong></p>
+<p>能够生成缩略图的图片格式有以下几种：jpg、jpeg、png、gif、bmp、webp、heic、heif、avci、livp。</p>
+<p><strong>大小限制</strong></p>
+<p>图片大小超过20M，不会生成缩略图。</p>
+<p><strong>使用方法</strong></p>
+<p>用户可以使用图片的缩略图地址实现图片预览，缩略图地址的有效时间一般为8h。</p>
+<p>一个缩略图示例</p>
+<pre><code class="language-shell">https://thumbnail0.baidupcs.com/thumbnail/a28d81b642c036afdf93baa4dceb36b5?fid=3389535607-250528-628176124867912&amp;rt=pr&amp;sign=FDTAER-DCb740ccc5511e5e8fedcff06b081203-GairIpJQM%2FnW8MXAwtyo0uFoFUs%3D&amp;expires=8h&amp;chkbd=0&amp;chkv=0&amp;dp-logid=1883219242572507968&amp;dp-callid=0&amp;time=1544101200&amp;size=c60_u60&amp;quality=100&amp;vuk=3389535607&amp;ft=image</code></pre>
+<p>size参数表示请求缩略图的大小，其中c表示图片的宽，u表示图片的高。</p>
+</div></div>

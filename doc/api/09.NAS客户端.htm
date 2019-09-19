@@ -1,0 +1,160 @@
+<div data-v-446853f1="" class="open-body__right markdown-body"><div data-v-e39afd5e="" data-v-446853f1="" class="document"><h3 id="基本介绍">基本介绍</h3>
+<p>baiduNas为百度网盘开发的一款nas客户端程序。基本功能如下：</p>
+<p>1、上传文件到网盘</p>
+<p>2、下载文件到设备(需要和百度网盘的下载客户端P2PClient配合)</p>
+<p>3、启动局域网http服务</p>
+<p>4、上传日志到云端</p>
+<h3 id="启动参数">启动参数</h3>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ip</td>
+<td>是</td>
+<td>局域网ip</td>
+</tr>
+<tr>
+<td>port</td>
+<td>是</td>
+<td>局域网port</td>
+</tr>
+<tr>
+<td>macid</td>
+<td>是</td>
+<td>硬件设备唯一标识(序列号或MAC地址)</td>
+</tr>
+<tr>
+<td>type</td>
+<td>是</td>
+<td>设备类型(需事先和网盘约定)</td>
+</tr>
+<tr>
+<td>clientid</td>
+<td>是</td>
+<td>openAPI平台下发的clientID</td>
+</tr>
+<tr>
+<td>logoff</td>
+<td>否</td>
+<td>是否关闭日志打印，yes表示关闭，默认打开</td>
+</tr>
+<tr>
+<td>path</td>
+<td>否</td>
+<td>baiduNas程序所在路径</td>
+</tr>
+</tbody></table>
+<p><strong>启动示例</strong></p>
+<pre><code class="language-shell"># conf文件夹需与baiduNas位于同级目录
+./baiduNas -ip 127.0.0.1 -port 8443 -macid test -type 123 -clientid 456 -logoff yes -path /abc/def</code></pre>
+<h3 id="局域网服务">局域网服务</h3>
+<h4 id="刷access_token到设备">刷access_token到设备</h4>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">GET http://127.0.0.1:8443/register</code></pre>
+<p><strong>请求参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>access_token</td>
+<td>string</td>
+<td>是</td>
+<td>授权凭证，请求openAPI相关接口获取</td>
+</tr>
+</tbody></table>
+<p><strong>响应参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>device_id</td>
+<td>string</td>
+<td>设备ID</td>
+</tr>
+</tbody></table>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell">curl "http://127.0.0.1:8443/register?access_token=123"</code></pre>
+<p><strong>响应示例</strong></p>
+<pre><code class="language-json">{
+  "device_id": "456abc",
+  "errmsg": "success",
+  "errno": 0
+}</code></pre>
+<h4 id="上报设备事件">上报设备事件</h4>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">GET http://127.0.0.1:8443/event</code></pre>
+<p>备注：第三方需要定期上报quota事件，以便云端接口/rest/2.0/xpan/nas?method=quota，可以获取到正确的设备容量信息。</p>
+<p><strong>请求参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>type</td>
+<td>string</td>
+<td>是</td>
+<td>事件类型，quota 硬盘容量、usbIn usb插入、usbOut usb拔出</td>
+</tr>
+<tr>
+<td>path</td>
+<td>string</td>
+<td>是</td>
+<td>usb路径</td>
+</tr>
+<tr>
+<td>free</td>
+<td>string</td>
+<td>否</td>
+<td>硬盘剩余空间大小(单位MB)，type=quota时需要</td>
+</tr>
+<tr>
+<td>total</td>
+<td>string</td>
+<td>否</td>
+<td>硬盘总空间大小(单位MB)，type=quota时需要</td>
+</tr>
+<tr>
+<td>logpath</td>
+<td>string</td>
+<td>否</td>
+<td>p2p日志路径，type=usbIn时可选，默认为path</td>
+</tr>
+<tr>
+<td>log_expiretime</td>
+<td>string</td>
+<td>否</td>
+<td>p2p日志删除时间间隔(单位秒)，仅支持小时间隔<br>type=usbIn时可选，默认为4小时，即14400</td>
+</tr>
+</tbody></table>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell"># usbIn事件
+curl "http://127.0.0.1:8443/event?type=usbIn&amp;path=/home/dev&amp;log_expiretime=3600"
+# quota事件
+curl "http://127.0.0.1:8443/event?type=quota&amp;path=/home/dev&amp;free=100&amp;total=200"</code></pre>
+<p><strong>响应示例</strong></p>
+<pre><code class="language-json">{
+  "errmsg": "success",
+  "errno": 0
+}</code></pre>
+</div></div>

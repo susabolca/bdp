@@ -1,0 +1,501 @@
+<div data-v-446853f1="" class="open-body__right markdown-body"><div data-v-e39afd5e="" data-v-446853f1="" class="document"><p>上传能力包括：文件上传、文件夹创建。</p>
+<h2 id="接入说明">接入说明</h2>
+<h3 id="权限申请">权限申请</h3>
+<p>每个第三方在网盘只能拥有一个文件夹用于存储上传文件，该文件夹必须位于/apps目录下，名称可自定义。</p>
+<p>使用上传接口之前，请提供APPID和文件夹名称，网盘这边会进行配置。</p>
+<h3 id="上传限制">上传限制</h3>
+<p><strong>大小限制</strong></p>
+<p>普通用户单个上传文件大小上限为4G</p>
+<p>会员用户单个上传文件大小上限为10G</p>
+<p>超级会员用户单个上传文件大小上限为20G</p>
+<p><strong>类型限制</strong></p>
+<p>普通用户在网盘APP端无法上传视频、Live Photo</p>
+<h2 id="通用参数">通用参数</h2>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>access_token</td>
+<td>string</td>
+<td>是</td>
+<td>授权凭证</td>
+</tr>
+</tbody></table>
+<p>备注：</p>
+<p>1、所有接口都要带</p>
+<p>2、通用参数必须放在URL里</p>
+<h2 id="接口列表">接口列表</h2>
+<p>文件上传分为三个阶段：预上传、分片上传、创建文件。只有完成这三步，才能将文件上传到网盘。</p>
+<h3 id="预上传">预上传</h3>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">POST https://pan.baidu.com/rest/2.0/xpan/file?method=precreate</code></pre>
+<p><strong>请求参数</strong></p>
+<table>
+<thead>
+<tr>
+<th align="left">参数名</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">path</td>
+<td>string</td>
+<td>是</td>
+<td>上传后使用的文件绝对路径</td>
+</tr>
+<tr>
+<td align="left">size</td>
+<td>string</td>
+<td>是</td>
+<td>文件或目录的大小，单位B</td>
+</tr>
+<tr>
+<td align="left">isdir</td>
+<td>string</td>
+<td>是</td>
+<td>是否目录，0 文件、1 目录</td>
+</tr>
+<tr>
+<td align="left">autoinit</td>
+<td>int</td>
+<td>是</td>
+<td>固定值1</td>
+</tr>
+<tr>
+<td align="left">rtype</td>
+<td>int</td>
+<td>否</td>
+<td>文件命名策略，默认0<br>0 为不重命名，返回冲突<br>1 为只要path冲突即重命名<br>2 为path冲突且block_list不同才重命名<br>3 为覆盖</td>
+</tr>
+<tr>
+<td align="left">uploadid</td>
+<td>string</td>
+<td>否</td>
+<td>上传id</td>
+</tr>
+<tr>
+<td align="left">block_list</td>
+<td>json array</td>
+<td>是</td>
+<td>文件各分片MD5的json串</td>
+</tr>
+<tr>
+<td align="left">content-md5</td>
+<td>string</td>
+<td>否</td>
+<td>文件MD5</td>
+</tr>
+<tr>
+<td align="left">slice-md5</td>
+<td>string</td>
+<td>否</td>
+<td>文件校验段的MD5，校验段对应文件前256KB</td>
+</tr>
+<tr>
+<td align="left">local_ctime</td>
+<td>string</td>
+<td>否</td>
+<td>客户端创建时间， 默认为当前时间戳</td>
+</tr>
+<tr>
+<td align="left">local_mtime</td>
+<td>string</td>
+<td>否</td>
+<td>客户端修改时间，默认为当前时间戳</td>
+</tr>
+</tbody></table>
+<p>备注：</p>
+<p>1、rtype=0时，如果云端存在同名文件，此次调用会失败</p>
+<p>2、云端文件重命名策略：假设云端文件为test.txt，新的名称为test(1).txt</p>
+<p>3、content_md5和slice_md5都不为空时，接口会判断云端是否已存在相同文件，如果存在，返回的return_type=2</p>
+<p><strong>响应参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>path</td>
+<td>string</td>
+<td>文件的绝对路径</td>
+</tr>
+<tr>
+<td>uploadid</td>
+<td>string</td>
+<td>上传id</td>
+</tr>
+<tr>
+<td>return_type</td>
+<td>int</td>
+<td>返回类型，1 文件在云端不存在、2 文件在云端已存在</td>
+</tr>
+<tr>
+<td>block_list</td>
+<td>json array</td>
+<td>需要上传的分片序号，索引从0开始</td>
+</tr>
+</tbody></table>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell">curl "http://pan.baidu.com/rest/2.0/xpan/file?method=precreate&amp;access_token=123" -d 'path=/baidu/test/test.zip&amp;size=2626327&amp;isdir=0&amp;autoinit=1&amp;rtype=3&amp;block_list=["60bac7b6464d84fed842955e6126826a"]&amp;content-md5=60bac7b6464d84fed842955e6126826a&amp;slice-md5=3c5c864d432cc2381b687f8d873e1429' -H "User-Agent: pan.baidu.com"</code></pre>
+<p><strong>响应示例</strong></p>
+<pre><code class="language-json"># block_list为空时，等价于[0]
+{
+  "path": "/baidu/test/test.zip",
+  "uploadid": "N1-MjIwLjE4MS4zOC4xMTY6MTU0NTgxOTIyNzoyNzMzODk2NTI3MzYyMjk2MTU=",
+  "return_type": 1,
+  "block_list": [],
+  "errno": 0,
+  "request_id": 273389652736229615
+}
+# 需要上传3个分片
+{
+    "path": "/baidu/test/test.zip",
+    "uploadid": "N1-NjEuMTM1LjE2OS44NDoxNTQ1ODE4MTY1OjgzNDM1NTUyMzU5MjIxMTMzMDc=",
+    "return_type": 1,
+    "block_list": [0,1,2],
+    "errno": 0,
+    "request_id": 8343555235922113307
+}
+# 文件已存在于云端，上传完成
+{
+  "return_type": 2,
+  "errno": 0,
+  "info": {
+    "size": 2626327,
+    "category": 6,
+    "isdir": 0,
+    "request_id": 273435691682366413,
+    "path": "/baidu/test/test.zip",
+    "fs_id": 657059106724647,
+    "md5": "60bac7b6464d84fed842955e6126826a",
+    "ctime": 1545819399,
+    "mtime": 1545819399
+  },
+  "request_id": 273435691682366413
+}</code></pre>
+<p><strong>错误码说明</strong></p>
+<table>
+<thead>
+<tr>
+<th>错误码</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>-7</td>
+<td>文件或目录名错误或无权访问</td>
+</tr>
+</tbody></table>
+<h3 id="分片上传">分片上传</h3>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">POST https://d.pcs.baidu.com/rest/2.0/pcs/superfile2</code></pre>
+<p>备注：</p>
+<p>1、普通用户单个分片大小固定为4MB</p>
+<p>2、普通会员用户单个分片大小上限为16MB</p>
+<p>3、超级会员用户单个分片大小上限为32MB</p>
+<p><strong>请求参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>method</td>
+<td>string</td>
+<td>是</td>
+<td>固定值 upload</td>
+</tr>
+<tr>
+<td>type</td>
+<td>string</td>
+<td>是</td>
+<td>固定值 tmpfile</td>
+</tr>
+<tr>
+<td>path</td>
+<td>string</td>
+<td>是</td>
+<td>上传后使用的文件绝对路径</td>
+</tr>
+<tr>
+<td>uploadid</td>
+<td>string</td>
+<td>是</td>
+<td>precreate接口下发的uploadid</td>
+</tr>
+<tr>
+<td>file</td>
+<td>char[]</td>
+<td>是</td>
+<td>上传的文件内容</td>
+</tr>
+<tr>
+<td>partseq</td>
+<td>int</td>
+<td>是</td>
+<td>文件分片的位置序号，参考precreate接口返回的block_list</td>
+</tr>
+</tbody></table>
+<p>备注：只有file需要置于form表单中，其余参数需要置于querystring中</p>
+<p><strong>响应参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>md5</td>
+<td>string</td>
+<td>文件云端md5</td>
+</tr>
+</tbody></table>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell">curl -F 'file=@/Users/weijiazhen/Downloads/baijiahao.png' "https://d.pcs.baidu.com/rest/2.0/pcs/superfile2?access_token=123&amp;method=upload&amp;type=tmpfile&amp;path=/baidu/test/test.txt&amp;uploadid=N1-NjEuMTM1LjE2OS44NDoxNTQ1OTY1NTQyOjgzODMxMTY0MDkyNDY2NjQ5Nzg&amp;partseq=0"</code></pre>
+<p><strong>响应示例</strong></p>
+<pre><code class="language-json">{
+  "md5": "55142edf74727f4a80cfd86c4d80be4f",
+  "request_id": 8383464737849269312
+}</code></pre>
+<p><strong>错误码说明</strong></p>
+<table>
+<thead>
+<tr>
+<th>错误码</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>31024</td>
+<td>没有申请上传权限</td>
+</tr>
+<tr>
+<td>31299</td>
+<td>第一个分片的大小小于4MB</td>
+</tr>
+<tr>
+<td>31364</td>
+<td>超出分片大小限制</td>
+</tr>
+</tbody></table>
+<h3 id="创建文件">创建文件</h3>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">POST https://pan.baidu.com/rest/2.0/xpan/file?method=create</code></pre>
+<p>备注：可以使用该接口创建文件夹。</p>
+<p><strong>请求参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数名</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>path</td>
+<td>string</td>
+<td>是</td>
+<td>上传后使用的文件绝对路径</td>
+</tr>
+<tr>
+<td>size</td>
+<td>string</td>
+<td>是</td>
+<td>文件或目录的大小，必须要和文件真实大小保持一致</td>
+</tr>
+<tr>
+<td>isdir</td>
+<td>string</td>
+<td>是</td>
+<td>是否目录，0 文件、1 目录</td>
+</tr>
+<tr>
+<td>rtype</td>
+<td>int</td>
+<td>否</td>
+<td>文件命名策略，默认1<br>0 为不重命名，返回冲突<br>1 为只要path冲突即重命名<br>2 为path冲突且block_list不同才重命名<br>3 为覆盖</td>
+</tr>
+<tr>
+<td>uploadid</td>
+<td>string</td>
+<td>否</td>
+<td>uploadid， 非空表示通过superfile2上传</td>
+</tr>
+<tr>
+<td>block_list</td>
+<td>json array</td>
+<td>否</td>
+<td>文件各分片MD5的json串<br>MD5对应superfile2返回的md5，且要按照序号顺序排列</td>
+</tr>
+<tr>
+<td>local_ctime</td>
+<td>int</td>
+<td>否</td>
+<td>客户端创建时间(精确到秒)，默认为当前时间戳</td>
+</tr>
+<tr>
+<td>local_mtime</td>
+<td>int</td>
+<td>否</td>
+<td>客户端修改时间(精确到秒)，默认为当前时间戳</td>
+</tr>
+<tr>
+<td>zip_quality</td>
+<td>int</td>
+<td>否</td>
+<td>图片压缩程度，有效值50、70、100</td>
+</tr>
+<tr>
+<td>zip_sign</td>
+<td>int</td>
+<td>否</td>
+<td>未压缩原始图片文件真实md5</td>
+</tr>
+<tr>
+<td>is_revision</td>
+<td>int</td>
+<td>否</td>
+<td>是否需要多版本支持<br>1为支持，0为不支持， 默认为0 (带此参数会忽略重命名策略)</td>
+</tr>
+<tr>
+<td>mode</td>
+<td>int</td>
+<td>否</td>
+<td>上传方式<br>1 手动、2 批量上传、3 文件自动备份<br>4 相册自动备份、5 视频自动备份</td>
+</tr>
+<tr>
+<td>exif_info</td>
+<td>string</td>
+<td>否</td>
+<td>json字符串</td>
+</tr>
+</tbody></table>
+<p>exif_info示例</p>
+<pre><code class="language-json">{
+  "height": 3024,
+  "date_time_original": "2018:09:06 15:58:58",
+  "model": "iPhone 6s",
+  "width": 4032,
+  "date_time_digitized": "2018:09:06 15:58:58",
+  "date_time": "2018:09:06 15:58:58",
+  "orientation": 6,
+  "recovery": 0
+}
+# 必需字段
+orientation、width、height、recovery，默认值为0
+其他字段如果没有可以不传</code></pre>
+<p><strong>响应参数</strong>    </p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>fs_id</td>
+<td>uint64</td>
+<td>文件在云端的唯一标识ID</td>
+</tr>
+<tr>
+<td>md5</td>
+<td>string</td>
+<td>文件的MD5，只有提交文件时才返回，提交目录时没有该值</td>
+</tr>
+<tr>
+<td>server_filename</td>
+<td>string</td>
+<td>文件名</td>
+</tr>
+<tr>
+<td>category</td>
+<td>int</td>
+<td>分类类型, 1 视频 2 音频 3 图片 4 文档 5 应用 6 其他 7 种子</td>
+</tr>
+<tr>
+<td>path</td>
+<td>string</td>
+<td>上传后使用的文件绝对路径</td>
+</tr>
+<tr>
+<td>size</td>
+<td>uint64</td>
+<td>文件大小，单位B</td>
+</tr>
+<tr>
+<td>ctime</td>
+<td>uint64</td>
+<td>文件创建时间</td>
+</tr>
+<tr>
+<td>mtime</td>
+<td>uint64</td>
+<td>文件修改时间</td>
+</tr>
+<tr>
+<td>isdir</td>
+<td>int</td>
+<td>是否目录，0 文件、1 目录</td>
+</tr>
+</tbody></table>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell">curl "https://pan.baidu.com/rest/2.0/xpan/file?method=create&amp;access_token=123" -d 'path=/baidu/test/test.txt&amp;size=33818&amp;isdir=0&amp;rtype=3&amp;uploadid=N1-NjEuMTM1LjE2OS44NDoxNTQ1OTY5MjAzOjgzODQwOTkyMzc2Nzc3MTQwNjc=&amp;block_list=["7d57c40c9fdb4e4a32d533bee1a4e409"]' -H "User-Agent: pan.baidu.com"</code></pre>
+<p><strong>响应示例</strong></p>
+<pre><code class="language-json">{
+  "fs_id": 693789892866840,
+  "md5": "7d57c40c9fdb4e4a32d533bee1a4e409",
+  "server_filename": "test.txt",
+  "category": 4,
+  "path": "/baidu/test/test.txt",
+  "size": 33818,
+  "ctime": 1545969541,
+  "mtime": 1545969541,
+  "isdir": 0,
+  "errno": 0,
+  "name": "/baidu/test/test.txt"
+}</code></pre>
+<p><strong>错误码说明</strong></p>
+<table>
+<thead>
+<tr>
+<th>错误码</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>-7</td>
+<td>文件或目录名错误或无权访问</td>
+</tr>
+<tr>
+<td>-8</td>
+<td>文件或目录已存在</td>
+</tr>
+<tr>
+<td>-10</td>
+<td>云端容量已满</td>
+</tr>
+<tr>
+<td>10</td>
+<td>创建文件的superfile失败</td>
+</tr>
+</tbody></table>
+</div></div>

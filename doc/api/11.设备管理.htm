@@ -1,0 +1,562 @@
+<div data-v-446853f1="" class="open-body__right markdown-body"><div data-v-e39afd5e="" data-v-446853f1="" class="document"><p>本文档适用于硬件开发者，可实现设备的注册、绑定、解绑等基础操作。</p>
+<h2 id="接口列表">接口列表</h2>
+<h3 id="设备注册">设备注册</h3>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">GET https://pan.baidu.com/rest/2.0/xpan/device?method=register</code></pre>
+<p>备注：第三方应用安装时调用</p>
+<p><strong>请求参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>device_type</td>
+<td>string</td>
+<td>是</td>
+<td>设备类型，具体值线下提供</td>
+</tr>
+<tr>
+<td>device_addr</td>
+<td>string</td>
+<td>是</td>
+<td>设备地址(设备的唯一标识)，可以是MAC地址或者产品序列号</td>
+</tr>
+</tbody></table>
+<p>备注：建议第三方对设备地址进行加密，即device_addr=MD5(MAC地址/产品序列号)</p>
+<p><strong>响应参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>device_id</td>
+<td>string</td>
+<td>设备ID</td>
+</tr>
+</tbody></table>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell">curl "https://pan.baidu.com/rest/2.0/xpan/device?method=register&amp;device_type=123&amp;device_addr=test" -H "User-Agent: pan.baidu.com"</code></pre>
+<p><strong>响应示例</strong></p>
+<pre><code class="language-json">{
+    "device_id": "91119331626125597v",
+    "errmsg": "",
+    "errno": 0,
+    "request_id": "464266988228760988"
+}</code></pre>
+<p><strong>错误码说明</strong></p>
+<table>
+<thead>
+<tr>
+<th>错误码</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>42100</td>
+<td>设备类型不存在</td>
+</tr>
+</tbody></table>
+<h3 id="设备绑定">设备绑定</h3>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">GET https://pan.baidu.com/rest/2.0/xpan/device?method=bind</code></pre>
+<p><strong>请求参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>access_token</td>
+<td>string</td>
+<td>是</td>
+<td>授权凭证</td>
+</tr>
+<tr>
+<td>device_id</td>
+<td>string</td>
+<td>是</td>
+<td>设备ID，设备注册接口下发</td>
+</tr>
+</tbody></table>
+<p><strong>响应参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>last_user</td>
+<td>string</td>
+<td>上一个绑定用户的账号，errno=42103时有效</td>
+</tr>
+</tbody></table>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell">curl "https://pan.baidu.com/rest/2.0/xpan/device?method=bind&amp;access_token=123&amp;device_id=efg" -H "User-Agent: pan.baidu.com"</code></pre>
+<p><strong>响应示例</strong></p>
+<pre><code class="language-json"># 正确示例
+{
+    "errmsg": "",
+    "errno": 0,
+    "request_id": "1480287893669784379"
+}
+# 错误示例
+{
+    "errmsg": "exceed max bind count per device",
+    "errno": 42103,
+    "last_user": "北极***g狼",
+    "request_id": "1352489237847401603"
+}</code></pre>
+<p><strong>错误码说明</strong></p>
+<table>
+<thead>
+<tr>
+<th>错误码</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>42101</td>
+<td>设备未注册</td>
+</tr>
+<tr>
+<td>42102</td>
+<td>超过每个用户能绑定的最大设备个数限制</td>
+</tr>
+<tr>
+<td>42103</td>
+<td>超过每个设备能绑定的最大用户个数限制</td>
+</tr>
+</tbody></table>
+<h3 id="设备解绑">设备解绑</h3>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">GET https://pan.baidu.com/rest/2.0/xpan/device?method=unbind</code></pre>
+<p><strong>请求参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>access_token</td>
+<td>string</td>
+<td>是</td>
+<td>授权凭证</td>
+</tr>
+<tr>
+<td>device_id</td>
+<td>string</td>
+<td>是</td>
+<td>设备ID，设备注册接口下发</td>
+</tr>
+</tbody></table>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell">curl "https://pan.baidu.com/rest/2.0/xpan/device?method=unbind&amp;access_token=123&amp;device_id=efg" -H "User-Agent: pan.baidu.com"</code></pre>
+<p><strong>错误码说明</strong></p>
+<table>
+<thead>
+<tr>
+<th>错误码</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>42101</td>
+<td>设备未注册</td>
+</tr>
+</tbody></table>
+<h3 id="检查设备绑定关系">检查设备绑定关系</h3>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">GET https://pan.baidu.com/rest/2.0/xpan/device?method=checkbind</code></pre>
+<p><strong>请求参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>access_token</td>
+<td>string</td>
+<td>是</td>
+<td>授权凭证</td>
+</tr>
+<tr>
+<td>device_id</td>
+<td>string</td>
+<td>是</td>
+<td>设备ID，设备注册接口下发</td>
+</tr>
+</tbody></table>
+<p><strong>响应参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>status</td>
+<td>int</td>
+<td>是否绑定，1 是、0 否</td>
+</tr>
+</tbody></table>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell">curl "https://pan.baidu.com/rest/2.0/xpan/device?method=checkbind&amp;access_token=123&amp;device_id=456" -H "User-Agent: pan.baidu.com"</code></pre>
+<p><strong>响应示例</strong></p>
+<pre><code class="language-json">{
+  "errmsg": "",
+  "errno": 0,
+  "request_id": "1253926140339337558",
+  "status": 1
+}</code></pre>
+<p><strong>错误码说明</strong></p>
+<table>
+<thead>
+<tr>
+<th>错误码</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>42101</td>
+<td>设备未注册</td>
+</tr>
+</tbody></table>
+<h3 id="设备列表diff">设备列表diff</h3>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">POST https://pan.baidu.com/rest/2.0/xpan/device?method=diff</code></pre>
+<p>备注：该接口获取的是设备列表的变化情况，而不是直接获取设备列表(diff，not list)</p>
+<p><strong>请求参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>access_token</td>
+<td>string</td>
+<td>是</td>
+<td>授权凭证</td>
+</tr>
+<tr>
+<td>cursor</td>
+<td>string</td>
+<td>是</td>
+<td>diff起点，首次为'null'</td>
+</tr>
+<tr>
+<td>category_list</td>
+<td>json array</td>
+<td>是</td>
+<td>设备分类列表，1 音箱，2 电视，3 nas</td>
+</tr>
+</tbody></table>
+<p>备注：这两个参数不能直接传递，具体使用方法参考请求示例</p>
+<p><strong>响应参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>cursor</td>
+<td>string</td>
+<td>下一次diff的起点</td>
+</tr>
+<tr>
+<td>has_more</td>
+<td>int</td>
+<td>是否还有更多数据，0 没有，1 有</td>
+</tr>
+<tr>
+<td>device_list</td>
+<td>json array</td>
+<td>设备列表</td>
+</tr>
+</tbody></table>
+<p>array内容</p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>device_id</td>
+<td>string</td>
+<td>设备ID</td>
+</tr>
+<tr>
+<td>device_type</td>
+<td>int</td>
+<td>设备类型</td>
+</tr>
+<tr>
+<td>status</td>
+<td>int</td>
+<td>设备状态，0 未绑定，1 绑定</td>
+</tr>
+<tr>
+<td>device_category</td>
+<td>int</td>
+<td>设备分类</td>
+</tr>
+<tr>
+<td>ability</td>
+<td>string</td>
+<td>设备能力，英文逗号分隔</td>
+</tr>
+<tr>
+<td>device_provider</td>
+<td>string</td>
+<td>设备厂商</td>
+</tr>
+<tr>
+<td>device_brand</td>
+<td>string</td>
+<td>设备品牌名称</td>
+</tr>
+<tr>
+<td>device_name</td>
+<td>string</td>
+<td>设备自定义名称</td>
+</tr>
+<tr>
+<td>device_logourl</td>
+<td>string</td>
+<td>设备icon url</td>
+</tr>
+<tr>
+<td>guide_desc</td>
+<td>string</td>
+<td>设备引导页文案</td>
+</tr>
+<tr>
+<td>guide_imgurl</td>
+<td>string</td>
+<td>设备引导页</td>
+</tr>
+<tr>
+<td>extra_info</td>
+<td>string</td>
+<td>设备其他信息，对应json string</td>
+</tr>
+</tbody></table>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell">curl "https://pan.baidu.com/rest/2.0/xpan/device?method=diff&amp;access_token=123" -d 'param={"cursor": "", "category_list": [1, 2, 3]}' -H "User-Agent: pan.baidu.com"</code></pre>
+<p><strong>响应示例</strong></p>
+<pre><code class="language-json">
+{
+  "cursor": "MTU0Mjg2MzgxMiMxNTQ0NjcyMDQ5",
+  "device_list": [
+    {
+      "ability": "4",
+      "ctime": 1541405212,
+      "device_brand": "华为路由器",
+      "device_category": 3,
+      "device_id": "123",
+      "device_logourl": "https://issuecdn.baidupcs.com/issue/netdisk/tu/rongyao/rongyao.png",
+      "device_name": "weijiazhen",
+      "device_provider": "华为",
+      "device_type": 2,
+      "extra_info": "",
+      "guide_desc": "华为路由器",
+      "guide_imgurl": "",
+      "mtime": 1543990788,
+      "status": 0
+    },
+    {
+      "ability": "4",
+      "ctime": 1542863812,
+      "device_brand": "华为路由器",
+      "device_category": 3,
+      "device_id": "456",
+      "device_logourl": "https://issuecdn.baidupcs.com/issue/netdisk/tu/rongyao/rongyao.png",
+      "device_name": "qingpao",
+      "device_provider": "华为",
+      "device_type": 2,
+      "extra_info": "",
+      "guide_desc": "华为路由器",
+      "guide_imgurl": "",
+      "mtime": 1543990788,
+      "status": 1
+    },
+    {
+      "ability": "1,2,3",
+      "ctime": 1541596125,
+      "device_brand": "创维盒子",
+      "device_category": 2,
+      "device_id": "789",
+      "device_logourl": "https://issuecdn.baidupcs.com/issue/netdisk/tu/hezi.PNG",
+      "device_name": "创维小湃盒子",
+      "device_provider": "创维",
+      "device_type": 1,
+      "extra_info": "",
+      "guide_desc": "更大屏幕，放大精彩",
+      "guide_imgurl": "",
+      "mtime": 1542441752,
+      "status": 1
+    },
+  ],
+  "errmsg": "",
+  "errno": 0,
+  "has_more": 0,
+  "request_id": "74449114155359224"
+}</code></pre>
+<h3 id="设备列表">设备列表</h3>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">GET https://pan.baidu.com/rest/2.0/xpan/device?method=list</code></pre>
+<p><strong>请求参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>access_token</td>
+<td>string</td>
+<td>是</td>
+<td>授权凭证</td>
+</tr>
+<tr>
+<td>category</td>
+<td>string</td>
+<td>是</td>
+<td>设备分类列表，1 音箱、2 电视、3 NAS<br>多个分类用英文逗号分隔，如1,2,3</td>
+</tr>
+</tbody></table>
+<p><strong>响应参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>device_id</td>
+<td>string</td>
+<td>设备ID</td>
+</tr>
+<tr>
+<td>device_type</td>
+<td>int</td>
+<td>设备类型</td>
+</tr>
+<tr>
+<td>status</td>
+<td>int</td>
+<td>设备状态，0 未绑定，1 绑定</td>
+</tr>
+<tr>
+<td>device_category</td>
+<td>int</td>
+<td>设备分类</td>
+</tr>
+<tr>
+<td>ability</td>
+<td>string</td>
+<td>设备能力，英文逗号分隔</td>
+</tr>
+<tr>
+<td>device_provider</td>
+<td>string</td>
+<td>设备厂商</td>
+</tr>
+<tr>
+<td>device_brand</td>
+<td>string</td>
+<td>设备品牌名称</td>
+</tr>
+<tr>
+<td>device_name</td>
+<td>string</td>
+<td>设备自定义名称</td>
+</tr>
+<tr>
+<td>device_logourl</td>
+<td>string</td>
+<td>设备icon url</td>
+</tr>
+<tr>
+<td>guide_desc</td>
+<td>string</td>
+<td>设备引导页文案</td>
+</tr>
+<tr>
+<td>guide_imgurl</td>
+<td>string</td>
+<td>设备引导页</td>
+</tr>
+<tr>
+<td>extra_info</td>
+<td>string</td>
+<td>设备其他信息，对应json string</td>
+</tr>
+</tbody></table>
+<p><strong>请求示例</strong></p>
+<pre><code class="language-shell">curl "https://pan.baidu.com/rest/2.0/xpan/device?method=list&amp;access_token=123&amp;category=3" -H "User-Agent: pan.baidu.com"</code></pre>
+<p><strong>响应示例</strong></p>
+<pre><code class="language-json">{
+  "list": [
+    {
+      "ability": "4",
+      "ctime": 1541405212,
+      "device_brand": "华为路由器",
+      "device_category": 3,
+      "device_id": "123",
+      "device_logourl": "https://issuecdn.baidupcs.com/issue/netdisk/tu/rongyao/rongyao.png",
+      "device_name": "weijiazhen",
+      "device_provider": "华为",
+      "device_type": 2,
+      "extra_info": "",
+      "guide_desc": "华为路由器",
+      "guide_imgurl": "",
+      "mtime": 1543990788,
+      "status": 0
+    },
+  ],
+  "errmsg": "",
+  "errno": 0,
+  "request_id": "74449114155359224"
+}</code></pre>
+</div></div>

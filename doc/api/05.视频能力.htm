@@ -1,0 +1,181 @@
+<div data-v-446853f1="" class="open-body__right markdown-body"><div data-v-e39afd5e="" data-v-446853f1="" class="document"><h2 id="接入说明">接入说明</h2>
+<p>第三方在使用视频接口之前，需要先提供APPID，网盘这边会进行配置。</p>
+<h2 id="通用参数">通用参数</h2>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>access_token</td>
+<td>string</td>
+<td>是</td>
+<td>授权凭证</td>
+</tr>
+</tbody></table>
+<p>备注：</p>
+<p>1、所有接口都要带</p>
+<p>2、通用参数必须放在URL里</p>
+<h2 id="接口列表">接口列表</h2>
+<h3 id="获取视频流">获取视频流</h3>
+<p><strong>接口说明</strong></p>
+<pre><code class="language-shell">GET https://pan.baidu.com/rest/2.0/xpan/file?method=streaming</code></pre>
+<p>备注：</p>
+<p>1、对于视频，该接口需要请求两次，第一次获取广告逻辑，第二次获取视频流。</p>
+<p>2、该接口可以获取音频流，只需要请求一次。</p>
+<p>3、如要实现原画播放，可以参考<a href="https://pan.baidu.com/union/document/basic"><font color="blue">开放平台基础能力接口文档</font></a>中的下载接口。</p>
+<p><strong>请求参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>必需</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>path</td>
+<td>string</td>
+<td>是</td>
+<td>视频文件路径</td>
+</tr>
+<tr>
+<td>type</td>
+<td>string</td>
+<td>是</td>
+<td>视频转码格式，见附录</td>
+</tr>
+<tr>
+<td>nom3u8</td>
+<td>int</td>
+<td>否</td>
+<td>是否不返回m3u8，0 返回、1 不返回，默认0</td>
+</tr>
+<tr>
+<td>adToken</td>
+<td>string</td>
+<td>否</td>
+<td>检验是否加载广告，默认空字符串</td>
+</tr>
+</tbody></table>
+<p><strong>响应参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>adTime</td>
+<td>int</td>
+<td>广告播放时长</td>
+</tr>
+<tr>
+<td>adToken</td>
+<td>string</td>
+<td>加载广告后返回的合法token，有效期10小时</td>
+</tr>
+<tr>
+<td>ltime</td>
+<td>int</td>
+<td></td>
+</tr>
+</tbody></table>
+<p>第一次请求示例</p>
+<pre><code class="language-shell">curl "https://pan.baidu.com/rest/2.0/xpan/file?method=streaming&amp;access_token=123&amp;path=Tai.mp4&amp;type=M3U8_FLV_264_480&amp;nom3u8=1" -H "User-Agent: pan.baidu.com"</code></pre>
+<p>第一次响应示例</p>
+<pre><code class="language-json">{
+  "errno": 133,
+  "request_id": 176251613904219330,
+  "adTime": 10,
+  "adToken": "123gu9Y=",
+  "ltime": 5
+}</code></pre>
+<p>第二次请求示例</p>
+<p>备注：</p>
+<p>1、第一次请求获取的adToken需要url encode一下，再做为第二次请求的参数。</p>
+<p>2、第二次请求应该在第一次响应之后，过ltime秒之后再发起。</p>
+<pre><code class="language-shell">curl "https://pan.baidu.com/rest/2.0/xpan/file?method=streaming&amp;access_token=123&amp;path=Tai.mp4&amp;type=M3U8_FLV_264_480&amp;adToken=123gu9Y%3d" -H "User-Agent: pan.baidu.com"</code></pre>
+<p>第二次响应示例</p>
+<pre><code class="language-json">返回M3U8格式的视频流</code></pre>
+<p><strong>错误码说明</strong></p>
+<table>
+<thead>
+<tr>
+<th>错误码</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>133</td>
+<td>播放广告</td>
+</tr>
+<tr>
+<td>31339</td>
+<td>视频非法</td>
+</tr>
+<tr>
+<td>31341</td>
+<td>视频正在转码，收到此错误码可以重试</td>
+</tr>
+<tr>
+<td>31346</td>
+<td>视频转码失败</td>
+</tr>
+<tr>
+<td>31024</td>
+<td>没有访问权限</td>
+</tr>
+</tbody></table>
+<p>备注：请求分片资源频率不要超过12个/5s。</p>
+<h2 id="附录">附录</h2>
+<h3 id="分片格式">分片格式</h3>
+<p>网盘视频分片共三种格式：ts、flv、mp4，音频分片共两种格式：ts、mp3。</p>
+<p>(视频推荐使用flv分片，音频推荐使用mp3分片)</p>
+<p>第三方可通过组合type参数和header中的User-Agent字段，获取不同格式的分片。</p>
+<table>
+<thead>
+<tr>
+<th>type</th>
+<th>User-Agent</th>
+<th>分片格式</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>M3U8_AUTO_480</td>
+<td>xpanvideo;$appName;$appVersion;$sysName;$sysVersion;ts</td>
+<td>视频ts</td>
+</tr>
+<tr>
+<td>M3U8_FLV_264_480</td>
+<td>xpanvideo;$appName;$appVersion;$sysName;$sysVersion;flv</td>
+<td>视频flv</td>
+</tr>
+<tr>
+<td>M3U8_MP3_128</td>
+<td>xpanaudio;$appName;$appVersion;$sysName;$sysVersion;mp3</td>
+<td>音频mp3</td>
+</tr>
+<tr>
+<td>M3U8_HLS_MP3_128</td>
+<td>xpanaudio;$appName;$appVersion;$sysName;$sysVersion;ts</td>
+<td>音频ts</td>
+</tr>
+</tbody></table>
+<p>其中</p>
+<p>$appName：应用名称</p>
+<p>$appVersion：应用版本</p>
+<p>$sysName：系统名称</p>
+<p>$sysVersion：系统版本</p>
+<p>对于一个在Android 9.0系统上开发的版本号为1.0.0的应用pantest，一个有效的User-Agent如下：</p>
+<p>xpanvideo;pantest;1.0.0;Android;9.0;ts</p>
+<h3 id="有效时间">有效时间</h3>
+<p>m3u8列表中视频分片地址的有效时间为8小时。</p>
+</div></div>
