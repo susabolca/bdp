@@ -1,6 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+#import socket, io
+#socket.setdefaulttimeout(600)
+
+import io, _io
 from functools import wraps
 import json
 try:
@@ -9,9 +13,28 @@ except ImportError:
     from urllib.parse import urlencode
 
 import requests
-#from requests_toolbelt import MultipartEncoder
+from requests_toolbelt import MultipartEncoder
+from optparse import OptionParser
+import os, sys
+import hashlib, zlib
+
+import logging
+try:
+    from http.client import HTTPConnection
+except ImportError:
+    from httplib import HTTPConnection
+HTTPConnection.debuglevel = 1
+
+logging.basicConfig() # 初始化 logging，否则不会看到任何 requests 的输出。
+logging.getLogger().setLevel(logging.DEBUG)
+requests_log = logging.getLogger("requests.packages.urllib3")
+requests_log.setLevel(logging.DEBUG)
+requests_log.propagate = True
 
 API_TEMPLATE = 'https://pan.baidu.com/rest/2.0/xpan/{0}'
+#API_TEMPLATE = 'https://pcs.baidu.com/rest/2.0/pcs/{0}'
+
+USER_AGENT = 'pan.baidu.com'
 
 class InvalidToken(Exception):
     """异常：Access Token 不正确或者已经过期."""
@@ -53,6 +76,13 @@ class BaseClass(object):
             url = self.api_template.format(uri)
         api = url
 
+        if kwargs.get('headers'):
+            if not kwargs['headers'].get('User-Agnet'):
+                kwargs['headers']['User-Agent'] = USER_AGENT 
+        else:
+            kwargs['headers'] = {'User-Agent': USER_AGENT}
+
+        #print(kwargs)
         if data or files:
             api = '%s?%s' % (url, urlencode(params))
             if data:
@@ -64,7 +94,47 @@ class BaseClass(object):
                     kwargs['headers']['Content-Type'] = data.content_type
                 else:
                     kwargs['headers'] = {'Content-Type': data.content_type}
+            print(kwargs['headers'])
             response = requests.post(api, data=data, **kwargs)
+        else:
+            response = requests.get(api, params=params, **kwargs)
+        return response
+
+    @check_token
+    def _request2(self, uri, method, url=None, extra_params=None,
+                 data=None, files=None, **kwargs):
+        params = {
+            'method': method,
+            'access_token': self.access_token
+        }
+        if extra_params:
+            params.update(extra_params)
+            self._remove_empty_items(params)
+
+        if not url:
+            url = self.api_template.format(uri)
+        api = url
+
+        if kwargs.get('headers'):
+            if not kwargs['headers'].get('User-Agnet'):
+                kwargs['headers']['User-Agent'] = USER_AGENT 
+        else:
+            kwargs['headers'] = {'User-Agent': USER_AGENT}
+
+        #print(kwargs)
+        if data or files:
+            api = '%s?%s' % (url, urlencode(params))
+            #if data:
+            #    self._remove_empty_items(data)
+            #else:
+                #self._remove_empty_items(files)
+                #data = MultipartEncoder(files)
+                #if kwargs.get('headers'):
+                #    kwargs['headers']['Content-Type'] = data.content_type
+                #else:
+                #    kwargs['headers'] = {'Content-Type': data.content_type}
+            print(kwargs['headers'])
+            response = requests.post(api, files=files, **kwargs)
         else:
             response = requests.get(api, params=params, **kwargs)
         return response
@@ -769,7 +839,8 @@ class PCS(BaseClass):
             'slice-md5': slice_md5,
             'ondup': ondup,
         }
-        return self._request('file', 'rapidupload', data=data, **kwargs)
+        url = 'https://d.pcs.baidu.com/rest/2.0/pcs/file'
+        return self._request('file', 'rapidupload', url=url, data=data, **kwargs)
 
     def add_download_task(self, source_url, remote_path,
                           rate_limit=None, timeout=60 * 60,
@@ -948,3 +1019,272 @@ class PCS(BaseClass):
             'type': 'recycle',
         }
         return self._request('file', 'delete', data=data, **kwargs)
+    
+    def get_dlink(self, fs_ids, **kwargs):
+        print(fs_ids)
+        data = {
+            'fsids': json.dumps(fs_ids), 
+            'dlink': 1
+        }
+        return self._request('multimedia', 'filemetas', data=data, **kwargs)
+
+    def list_all(self, rpath, **kwargs):
+        data = {
+            'path': rpath,
+            'recursion': 0
+        }
+        return self._request('multimedia', 'listall', data=data, **kwargs)
+    
+    def urlretrieve(self, url, to, **kwargs):
+        r = self._request('', '', url=url, stream=True, **kwargs)
+        f = open(to, "wb")
+        for chunk in r.iter_content(chunk_size=(1*1024*1024)):
+            if chunk:
+                f.write(chunk)
+
+    def upload2_precreate(self, rpath, fsize, md5s, f_md5, c_md5, ctime, mtime, rtype=2, **kwargs):
+        data = {
+            "path": rpath,
+            "size": fsize,
+            "isdir": 0,
+            "autoinit": 1,
+            "rtype": rtype,
+            "block_list": json.dumps(md5s),
+            "content-md5": f_md5,
+            "slice-md5": c_md5,
+            "local_ctime": ctime,
+            "local_mtime": mtime
+        }
+        return self._request('file', 'precreate', data=data, **kwargs)
+
+    def upload2_superfile(self, rpath, uid, seq, raw, **kwargs):
+        params = {
+            "type": "tmpfile",
+            "path": rpath,
+            "uploadid": uid,
+            "partseq": seq,
+            "timeout": "None" 
+        }
+        files = {'file': (os.path.split(rpath)[1], raw, '')}
+        #files = {'file': raw}
+        url = "https://d.pcs.baidu.com/rest/2.0/pcs/superfile2"
+        r = self._request('file', 'upload', url=url, extra_params=params, files=files, **kwargs)
+        #r = self._request('', '', url=url, stream=True, **kwargs)
+        #f = open(to, "wb")
+        #for chunk in r.iter_content(chunk_size=(1*1024)):
+        #    print(chunk)
+        #    if chunk:
+        #        f.write(chunk)
+        return r
+
+    def upload2_create(self, rpath, fsize, md5s, **kwargs):
+        data = {
+            "path": rpath,
+            "size": fsize,
+            "isdir": 0,
+            "rtype": 0,
+            "uploadid": uid,
+            "block_list": md5s
+        }
+        return self._request('file', 'create', data=data, **kwargs)
+
+def read_in_chunks(file_object, length, blocksize=(4*1024)):
+    size = 0
+    while size >= length:
+        size += blocksize
+        data = file_object.read(blocksize)
+        if not data:
+            break
+        yield data
+
+class FileLimiter(object):
+    def __init__(self, file_obj, read_limit):
+        self.read_limit = read_limit
+        self.amount_seen = 0
+        self.file_obj = file_obj
+
+        # So that requests doesn't try to chunk the upload but will instead stream it:
+        self.len = read_limit
+
+    def read(self, amount=-1):
+        if self.amount_seen >= self.read_limit:
+            return b''
+        remaining_amount = self.read_limit - self.amount_seen
+        data = self.file_obj.read(min(amount, remaining_amount))
+        self.amount_seen += len(data)
+        return data
+
+class pfile():
+    def __init__(self, f, offset, length):
+        self.f = f
+        self.offset = offset
+        self.length = length
+        self.left = length 
+
+    def read(self, size=-1):
+        print(size)
+        can = min(self.left, size)
+        self.left -= can
+        return self.f.read(can)
+
+    def tell(self):
+        return self.length - self.left
+
+class ChunkIO(object):
+
+    def __init__(self, f, offset, length, callback=None):
+        self.f = f
+        self.offset = offset
+        self.length = length
+        self.callback = callback
+
+    def __iter__(self):
+        count = 0
+        for data in iter(self.f):
+            count += len(data)
+            yield data
+            if self.callback:
+                self.callback(count)
+
+    def read(self, size=-1):
+        return self.f.read(size)
+
+
+class PCSCLI():
+    def __init__(self, ak):
+        self.pcs = PCS(ak)
+    
+    def md5sum(self, filename, offset=0, length=0, blocksize=(256*1024)):
+        #if length > 0 and not length % blocksize == 0:
+        #    raise ArithmeticError
+        size = length 
+        hash = hashlib.md5()
+        with open(filename, "rb") as f:
+            if offset > 0:
+                f.seek(offset)
+            for block in iter(lambda: f.read(blocksize), b""):
+                hash.update(block)
+                if size > 0:
+                    size -= blocksize
+                    if size == 0: break
+        return hash.hexdigest()
+
+    def adler32sum(self, filename, blocksize=(256*1024)):
+        checksum = zlib.crc32(b"")
+        with open(filename, "rb") as f:
+            for block in iter(lambda: f.read(blocksize), b""):
+                checksum = zlib.crc32(block, checksum)
+        return checksum & 0xffffffff
+
+    def config(self):
+        pass
+
+    def info(self, argv):
+        rsp = self.pcs.uinfo()
+        print(rsp.json())
+
+    def list(self, argv):
+        rsp = self.pcs.file_list(argv)    
+        if not rsp.ok:
+            print(rsp.status_code, rsp.content)
+            return 
+        for i in rsp.json()['list']:
+            print("%15d %s" %(i['size'], i['path']))
+    
+    def upload(self, argv):
+        lfile = argv[0]
+        rpath = argv[1]
+        fst = os.stat(lfile)
+        f_size = fst.st_size
+        f_ctime = fst.st_ctime
+        f_mtime = fst.st_mtime
+        f_md5 = self.md5sum(lfile)
+        f_crc32 = self.adler32sum(lfile)
+        c_md5 = self.md5sum(lfile, length=(256*1024))
+        print("fsize:%u, fmd5:%s, fcrc32:%s, cmd5:%s, ctime:%u, mtime:%u"%(f_size, f_md5, f_crc32, c_md5, f_ctime, f_mtime))
+
+        chunks = []
+        max_chunk_size = 4*1024*1024
+        size = f_size
+        offset = 0
+        length = 0 
+        while size > 0:
+            if size > max_chunk_size: 
+                size -= max_chunk_size
+                length = max_chunk_size
+            else:
+                length = size
+                size = 0
+            md5 = self.md5sum(lfile, offset=offset, length=length)
+            #print("offset:%u, length=%u, md5=%s"%(offset, length, md5))
+            chunks.append({"offset": offset, "length": length, "md5": md5})
+            offset += max_chunk_size
+        print(chunks)
+        md5s = [ i['md5'] for i in chunks ]
+        print(md5s)
+        rsp = self.pcs.upload2_precreate(rpath, f_size, md5s, f_md5, c_md5, f_ctime, f_mtime)
+        j = rsp.json()
+        print(j)
+        if j['errno'] != 0: 
+            print("upload failed.")
+            return
+
+        if j['return_type'] == 2:
+            #i = j['info']
+            #print("rapid uploaded, path(%s),size(%u),md5(%s),fid(%s)"%(i['path'], i['size'], i['md5'], i['fs_id']))
+            print("rapid uploaded.")
+            return
+        
+        uid = j['uploadid']
+        block_list = j['block_list']
+        f = open(lfile, 'rb')
+        for i in block_list:
+            c = chunks[i]
+            f.seek(c['offset'], 0)
+            #raw = pfile(f, c['offset'], c['length'])
+            #raw = FileLimiter(f, c['length'])
+            #raw = read_in_chunks(f, c['length'])
+            raw = io.BytesIO(f.read(c['length']))
+            #raw = io.BytesIO()
+            #raw.write(f.read(c['length']))
+            #raw.seek(0,0)
+            print(raw.tell())
+            print(raw)
+            #raw = f.read(c['length'])
+            #print("offset:%u, size:%u"%(c['offset'], len(raw)))
+            rsp = self.pcs.upload2_superfile(rpath, uid, i, raw)
+            j = rsp.json()
+            print(j)
+        f.close()
+
+    def download(self, argv):
+        rpath = argv[0]
+        print(rpath)
+        rsp = self.pcs.file_list(os.path.split(rpath)[0])    
+        if not rsp.ok:
+            print(rsp.status_code, rsp.content)
+            return
+        for i in rsp.json()['list']:
+            if i['path'] == rpath:
+                print(i)
+                dl = self.pcs.get_dlink([i['fs_id']])
+                fdl = dl.json()['list'][0]
+                self.pcs.urlretrieve(fdl['dlink'], fdl['filename'])
+
+def Main():
+    ak = json.loads(open('.bdp.conf').read())['ak']
+    print(ak)
+    cli = PCSCLI(ak)
+    op = sys.argv[1]
+    argv = sys.argv[2:] 
+    if op == 'ls':
+        cli.list(argv)
+    elif op == 'dl':
+        cli.download(argv)
+    elif op == 'info':
+        cli.info(argv)
+    elif op == 'upload':
+        cli.upload(argv)
+
+if __name__ == "__main__":
+    Main()
