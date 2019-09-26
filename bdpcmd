@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-#import socket, io
-#socket.setdefaulttimeout(600)
+import socket
+socket.setdefaulttimeout(3600.0)
 
 import io, _io
 from functools import wraps
@@ -23,13 +23,13 @@ try:
     from http.client import HTTPConnection
 except ImportError:
     from httplib import HTTPConnection
-HTTPConnection.debuglevel = 1
-
-logging.basicConfig() # 初始化 logging，否则不会看到任何 requests 的输出。
+#HTTPConnection.debuglevel = 5 
+#HTTPConnection.set_debuglevel(9)
+logging.basicConfig()
 logging.getLogger().setLevel(logging.DEBUG)
-requests_log = logging.getLogger("requests.packages.urllib3")
-requests_log.setLevel(logging.DEBUG)
-requests_log.propagate = True
+#requests_log = logging.getLogger("requests.packages.urllib3")
+#requests_log.setLevel(logging.DEBUG)
+#requests_log.propagate = True
 
 API_TEMPLATE = 'https://pan.baidu.com/rest/2.0/xpan/{0}'
 #API_TEMPLATE = 'https://pcs.baidu.com/rest/2.0/pcs/{0}'
@@ -115,11 +115,11 @@ class BaseClass(object):
             url = self.api_template.format(uri)
         api = url
 
-        if kwargs.get('headers'):
-            if not kwargs['headers'].get('User-Agnet'):
-                kwargs['headers']['User-Agent'] = USER_AGENT 
-        else:
-            kwargs['headers'] = {'User-Agent': USER_AGENT}
+        #if kwargs.get('headers'):
+        #    if not kwargs['headers'].get('User-Agnet'):
+        #        kwargs['headers']['User-Agent'] = USER_AGENT 
+        #else:
+        #    kwargs['headers'] = {'User-Agent': USER_AGENT}
 
         #print(kwargs)
         if data or files:
@@ -133,7 +133,7 @@ class BaseClass(object):
                 #    kwargs['headers']['Content-Type'] = data.content_type
                 #else:
                 #    kwargs['headers'] = {'Content-Type': data.content_type}
-            print(kwargs['headers'])
+            #print(kwargs['headers'])
             response = requests.post(api, files=files, **kwargs)
         else:
             response = requests.get(api, params=params, **kwargs)
@@ -1062,29 +1062,25 @@ class PCS(BaseClass):
             "type": "tmpfile",
             "path": rpath,
             "uploadid": uid,
-            "partseq": seq,
-            "timeout": "None" 
+            "partseq": seq
+            #"partoffset": 0,
+            #"vip": 1 
         }
         files = {'file': (os.path.split(rpath)[1], raw, '')}
         #files = {'file': raw}
-        url = "https://d.pcs.baidu.com/rest/2.0/pcs/superfile2"
-        r = self._request('file', 'upload', url=url, extra_params=params, files=files, **kwargs)
-        #r = self._request('', '', url=url, stream=True, **kwargs)
-        #f = open(to, "wb")
-        #for chunk in r.iter_content(chunk_size=(1*1024)):
-        #    print(chunk)
-        #    if chunk:
-        #        f.write(chunk)
-        return r
+        url = "https://c.pcs.baidu.com/rest/2.0/pcs/superfile2"
+        #url = 'https://c.pcs.baidu.com/rest/2.0/pcs/file'
+        return self._request('file', 'upload', url=url, extra_params=params, files=files, timeout=3600.0, **kwargs)
 
-    def upload2_create(self, rpath, fsize, md5s, **kwargs):
+    def upload2_create(self, rpath, fsize, uid, md5s, **kwargs):
         data = {
             "path": rpath,
             "size": fsize,
+            "uploadid": uid,
+            "block_list": json.dumps(md5s),
             "isdir": 0,
             "rtype": 0,
-            "uploadid": uid,
-            "block_list": md5s
+            "mode": 2 
         }
         return self._request('file', 'create', data=data, **kwargs)
 
@@ -1237,10 +1233,11 @@ class PCSCLI():
         
         uid = j['uploadid']
         block_list = j['block_list']
+        superfile_md5s = []
         f = open(lfile, 'rb')
         for i in block_list:
             c = chunks[i]
-            f.seek(c['offset'], 0)
+            f.seek(0)
             #raw = pfile(f, c['offset'], c['length'])
             #raw = FileLimiter(f, c['length'])
             #raw = read_in_chunks(f, c['length'])
@@ -1248,17 +1245,24 @@ class PCSCLI():
             #raw = io.BytesIO()
             #raw.write(f.read(c['length']))
             #raw.seek(0,0)
-            print(raw.tell())
-            print(raw)
+            #print(raw.tell())
+            #print(raw)
             #raw = f.read(c['length'])
             #print("offset:%u, size:%u"%(c['offset'], len(raw)))
             rsp = self.pcs.upload2_superfile(rpath, uid, i, raw)
+            #rsp = self.pcs.upload_tmpfile(raw)
             j = rsp.json()
+            superfile_md5s.append(j['md5'])
             print(j)
         f.close()
 
+        rsp = self.pcs.upload2_create(rpath, f_size, uid, superfile_md5s)
+        j = rsp.json()
+        print(j)
+     
     def download(self, argv):
         rpath = argv[0]
+        lfile = argv[1]
         print(rpath)
         rsp = self.pcs.file_list(os.path.split(rpath)[0])    
         if not rsp.ok:
@@ -1269,7 +1273,7 @@ class PCSCLI():
                 print(i)
                 dl = self.pcs.get_dlink([i['fs_id']])
                 fdl = dl.json()['list'][0]
-                self.pcs.urlretrieve(fdl['dlink'], fdl['filename'])
+                self.pcs.urlretrieve(fdl['dlink'], lfile)
 
 def Main():
     ak = json.loads(open('.bdp.conf').read())['ak']
