@@ -18,15 +18,15 @@ from optparse import OptionParser
 import os, sys
 import hashlib, zlib
 
-import logging
-try:
-    from http.client import HTTPConnection
-except ImportError:
-    from httplib import HTTPConnection
+#import logging
+#try:
+#    from http.client import HTTPConnection
+#except ImportError:
+#    from httplib import HTTPConnection
 #HTTPConnection.debuglevel = 5 
 #HTTPConnection.set_debuglevel(9)
-logging.basicConfig()
-logging.getLogger().setLevel(logging.DEBUG)
+#logging.basicConfig()
+#logging.getLogger().setLevel(logging.DEBUG)
 #requests_log = logging.getLogger("requests.packages.urllib3")
 #requests_log.setLevel(logging.DEBUG)
 #requests_log.propagate = True
@@ -1084,6 +1084,38 @@ class PCS(BaseClass):
         }
         return self._request('file', 'create', data=data, **kwargs)
 
+    def filemanager_delete(self, flist, **kwargs):
+        param = {
+            "opera": "delete"
+        }
+        data = {
+            "filelist": json.dumps(flist),
+            "async": 0
+        }
+        return self._request('file', 'filemanager', data=data, extra_params=param, **kwargs)
+
+    def filemanager_rename(self, rpath, dest, ondup="fail", **kwargs):
+        param = {
+            "opera": "rename"
+        }
+        data = {
+            "filelist": json.dumps([{"path":rpath, "newname":dest}]),
+            "async": 0
+        }
+        return self._request('file', 'filemanager', data=data, extra_params=param, **kwargs)
+
+    def filemanager_move(self, rpath, dest, ondup="fail", **kwargs):
+        p = os.path.split(dest)
+        param = {
+            "opera": "move"
+        }
+        data = {
+            "filelist": json.dumps([{"path":rpath, "dest":p[0], "newname":p[1], "ondup":ondup}]),
+            "async": 0,
+            "ondup": ondup
+        }
+        return self._request('file', 'filemanager', data=data, extra_params=param, **kwargs)
+
 def read_in_chunks(file_object, length, blocksize=(4*1024)):
     size = 0
     while size >= length:
@@ -1237,7 +1269,7 @@ class PCSCLI():
         f = open(lfile, 'rb')
         for i in block_list:
             c = chunks[i]
-            f.seek(0)
+            f.seek(c['offset'], 0)
             #raw = pfile(f, c['offset'], c['length'])
             #raw = FileLimiter(f, c['length'])
             #raw = read_in_chunks(f, c['length'])
@@ -1246,7 +1278,7 @@ class PCSCLI():
             #raw.write(f.read(c['length']))
             #raw.seek(0,0)
             #print(raw.tell())
-            #print(raw)
+            print("buffer size: %u"%raw.getbuffer().nbytes)
             #raw = f.read(c['length'])
             #print("offset:%u, size:%u"%(c['offset'], len(raw)))
             rsp = self.pcs.upload2_superfile(rpath, uid, i, raw)
@@ -1275,6 +1307,32 @@ class PCSCLI():
                 fdl = dl.json()['list'][0]
                 self.pcs.urlretrieve(fdl['dlink'], lfile)
 
+    def rename(self, argv):
+        rpath = argv[0]
+        dest = argv[1]
+        rsp = self.pcs.filemanager_rename(rpath, dest)    
+        if not rsp.ok:
+            print(rsp.status_code, rsp.content)
+            return
+        print(rsp.json())
+
+    def remove(self, argv):
+        rpath = [argv[0]]
+        rsp = self.pcs.filemanager_delete(rpath)    
+        if not rsp.ok:
+            print(rsp.status_code, rsp.content)
+            return
+        print(rsp.json())
+
+    def move(self, argv):
+        rpath = argv[0]
+        dest = argv[1]
+        rsp = self.pcs.filemanager_move(rpath, dest)    
+        if not rsp.ok:
+            print(rsp.status_code, rsp.content)
+            return
+        print(rsp.json())
+
 def Main():
     ak = json.loads(open('.bdp.conf').read())['ak']
     print(ak)
@@ -1289,6 +1347,12 @@ def Main():
         cli.info(argv)
     elif op == 'upload':
         cli.upload(argv)
+    elif op == 'rename':
+        cli.rename(argv)
+    elif op == 'remove':
+        cli.remove(argv)
+    elif op == 'move':
+        cli.move(argv)
 
 if __name__ == "__main__":
     Main()
