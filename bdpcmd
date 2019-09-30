@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import socket
-socket.setdefaulttimeout(3600.0)
+#import socket
+#socket.setdefaulttimeout(3600.0)
 
-import io, _io
 from functools import wraps
 import json
 try:
@@ -15,7 +14,7 @@ except ImportError:
 import requests
 from requests_toolbelt import MultipartEncoder
 from optparse import OptionParser
-import os, sys
+import os, sys, io, time
 import hashlib, zlib
 
 #import logging
@@ -100,46 +99,6 @@ class BaseClass(object):
             response = requests.get(api, params=params, **kwargs)
         return response
 
-    @check_token
-    def _request2(self, uri, method, url=None, extra_params=None,
-                 data=None, files=None, **kwargs):
-        params = {
-            'method': method,
-            'access_token': self.access_token
-        }
-        if extra_params:
-            params.update(extra_params)
-            self._remove_empty_items(params)
-
-        if not url:
-            url = self.api_template.format(uri)
-        api = url
-
-        #if kwargs.get('headers'):
-        #    if not kwargs['headers'].get('User-Agnet'):
-        #        kwargs['headers']['User-Agent'] = USER_AGENT 
-        #else:
-        #    kwargs['headers'] = {'User-Agent': USER_AGENT}
-
-        #print(kwargs)
-        if data or files:
-            api = '%s?%s' % (url, urlencode(params))
-            #if data:
-            #    self._remove_empty_items(data)
-            #else:
-                #self._remove_empty_items(files)
-                #data = MultipartEncoder(files)
-                #if kwargs.get('headers'):
-                #    kwargs['headers']['Content-Type'] = data.content_type
-                #else:
-                #    kwargs['headers'] = {'Content-Type': data.content_type}
-            #print(kwargs['headers'])
-            response = requests.post(api, files=files, **kwargs)
-        else:
-            response = requests.get(api, params=params, **kwargs)
-        return response
-
-
 class PCS(BaseClass):
     """百度个人云存储（PCS）Python SDK.
 
@@ -174,7 +133,7 @@ class PCS(BaseClass):
         return self._request('quota', 'info', **kwargs)
 
     def file_list(self, remote_path, order=None, desc=None,
-                   limit=None, **kwargs):
+                   limit=10000, **kwargs):
         """获取目录下的文件列表.
 
         :param remote_path: 网盘中目录的路径，默认 / 开头。
@@ -208,7 +167,6 @@ class PCS(BaseClass):
             'limit': limit
         }
         return self._request('file', 'list', extra_params=params, **kwargs)
-
 
     def upload(self, remote_path, file_content, ondup=None, **kwargs):
         """上传单个文件（<2G）.
@@ -1028,10 +986,11 @@ class PCS(BaseClass):
         }
         return self._request('multimedia', 'filemetas', data=data, **kwargs)
 
-    def list_all(self, rpath, **kwargs):
+    def list_all(self, rpath, limit=10000, **kwargs):
         data = {
             'path': rpath,
-            'recursion': 0
+            'recursion': 1,
+            'limit': limit,
         }
         return self._request('multimedia', 'listall', data=data, **kwargs)
     
@@ -1116,6 +1075,14 @@ class PCS(BaseClass):
         }
         return self._request('file', 'filemanager', data=data, extra_params=param, **kwargs)
 
+    def info2(self, **kwargs):
+        params = {
+            'checkfree': 1,
+            'checkexpire': 1,
+        }
+        url='https://pan.baidu.com/api/quota'
+        return self._request('quota', 'info', url=url, extra_params=params, **kwargs)
+
 def read_in_chunks(file_object, length, blocksize=(4*1024)):
     size = 0
     while size >= length:
@@ -1180,6 +1147,7 @@ class ChunkIO(object):
 
 class PCSCLI():
     def __init__(self, ak):
+        self.ak = ak
         self.pcs = PCS(ak)
     
     def md5sum(self, filename, offset=0, length=0, blocksize=(256*1024)):
@@ -1204,21 +1172,49 @@ class PCSCLI():
                 checksum = zlib.crc32(block, checksum)
         return checksum & 0xffffffff
 
+    def strftime(self, ts, fmt="%Y/%m/%d %H:%M:%S"):
+        return time.strftime(fmt, time.localtime(ts))
+
     def config(self):
         pass
 
     def info(self, argv):
+        print("access token: %s"%(self.ak))
+        a = self.ak.split('.')
+        expired=int(a[3])
+        print("expire in: %s"%self.strftime(expired))
         rsp = self.pcs.uinfo()
-        print(rsp.json())
+        j = rsp.json()
+        if j['errno'] == 0:
+            v = ['普通用户', '普通会员', '超级会员']
+            print("  name: %s"%j['baidu_name'])
+            print("   vip: %s"%v[int(j['vip_type'])])
+            print("   uid: %s"%j['uk'])
+        else: print(j)
+        rsp = self.pcs.info2()
+        j = rsp.json()
+        if j['errno'] == 0:
+            print(" total: %s"%(format(j['total'], ',')))
+            print("  used: %s"%(format(j['used'], ',')))
+            print("  free: %s"%(format(j['free'], ',')))
+            print("expire: %s"%(j['expire']))
+        else: print(rsp.json())
 
     def list(self, argv):
         rsp = self.pcs.file_list(argv)    
         if not rsp.ok:
             print(rsp.status_code, rsp.content)
-            return 
-        for i in rsp.json()['list']:
-            print("%15d %s" %(i['size'], i['path']))
-    
+            return
+         
+        if not 'list' in rsp.json(): return 
+        lst = rsp.json()['list']
+        for i in lst:
+            if i['isdir'] == 0:
+                print("%16u %18s %15s %32s %s" %(i['fs_id'], self.strftime(i['server_mtime']), format(i['size'],','), i['md5'], i['path']))
+            else:
+                print("%16u %18s %15s %s/" %(i['fs_id'], self.strftime(i['server_mtime']), i['size'], i['path']))
+        print("total %u"%len(lst))
+
     def upload(self, argv):
         lfile = argv[0]
         rpath = argv[1]
@@ -1270,19 +1266,8 @@ class PCSCLI():
         for i in block_list:
             c = chunks[i]
             f.seek(c['offset'], 0)
-            #raw = pfile(f, c['offset'], c['length'])
-            #raw = FileLimiter(f, c['length'])
-            #raw = read_in_chunks(f, c['length'])
             raw = io.BytesIO(f.read(c['length']))
-            #raw = io.BytesIO()
-            #raw.write(f.read(c['length']))
-            #raw.seek(0,0)
-            #print(raw.tell())
-            print("buffer size: %u"%raw.getbuffer().nbytes)
-            #raw = f.read(c['length'])
-            #print("offset:%u, size:%u"%(c['offset'], len(raw)))
             rsp = self.pcs.upload2_superfile(rpath, uid, i, raw)
-            #rsp = self.pcs.upload_tmpfile(raw)
             j = rsp.json()
             superfile_md5s.append(j['md5'])
             print(j)
@@ -1293,19 +1278,64 @@ class PCSCLI():
         print(j)
      
     def download(self, argv):
-        rpath = argv[0]
-        lfile = argv[1]
-        print(rpath)
-        rsp = self.pcs.file_list(os.path.split(rpath)[0])    
-        if not rsp.ok:
-            print(rsp.status_code, rsp.content)
+        # support fs_id or rpath
+        if len(argv) == 0:
             return
-        for i in rsp.json()['list']:
-            if i['path'] == rpath:
-                print(i)
-                dl = self.pcs.get_dlink([i['fs_id']])
-                fdl = dl.json()['list'][0]
-                self.pcs.urlretrieve(fdl['dlink'], lfile)
+        elif len(argv) == 1:
+            rpath = [argv[0]]
+            dest = "./"
+        elif len(argv) == 2:
+            rpath = [argv[0]]
+            dest = argv[1]
+            if not os.path.exists(os.path.dirname(dest)):
+                print("dest parent dir not exists.")
+                return
+            elif os.path.exists(dest) and not os.path.isdir(dest):
+                print("dest exists.")
+                return
+        else:
+            rpath = argv[:-1]
+            dest = argv[-1]
+            if not os.path.exists(dest) and not os.path.isdir(dest):
+                print("dest must be exists dir.")
+                return
+      
+        cache = {}
+        inodes = []
+        for s in rpath:
+            # get inode 
+            inode = 0
+            if rpath[0] == '/':
+                if s in cache:
+                    inode = i['fs_id']
+                    continue
+
+                rsp = self.pcs.file_list(os.path.split(rpath)[0])    
+                if not rsp.ok:
+                    print(rsp.status_code, rsp.content)
+                    return
+                
+                for i in rsp.json()['list']:
+                    cache[i['path']] = i
+                    if i['path'] == rpath:
+                        inode = i['fs_id']
+            else:
+                inode = int(s)
+
+            if inode == 0:
+                print("inode can't be zero. (%s)"%s)
+                continue
+            inodes.append(inode)
+
+        rsp = self.pcs.get_dlink(inodes)
+        j = rsp.json()
+        for l in j['list']:
+            #fdl = dl.json()['list'][0]
+            if os.path.isdir(dest):
+                lfile = os.path.join(dest, l['filename'])
+            else:
+                lfile = dest
+            self.pcs.urlretrieve(l['dlink'], lfile)
 
     def rename(self, argv):
         rpath = argv[0]
@@ -1333,26 +1363,73 @@ class PCSCLI():
             return
         print(rsp.json())
 
+    def diskusage(self, argv):
+        rpath = argv[0]
+        rsp = self.pcs.list_all(rpath)
+        if not rsp.ok:
+            print(rsp.status_code, rsp.content)
+            return
+        size = 0
+        total = 0
+        j = rsp.json()
+        for i in j['list']:
+            if i['isdir'] == 0:
+                print("%16u %18s %15s %32s %s" %(i['fs_id'], self.strftime(i['server_mtime']), format(i['size'],','), i['md5'], i['path']))
+                size += i['size']
+                total += 1
+        print("total %u files, %s Bytes."%(total, format(size,',')))
+
+def help():
+    '''
+    info                  show account info
+    ls                    list files
+    get                   get a file from remote
+    put                   put a file to remote
+    rename                rename a remote file/dir
+    mv                    move a remote to dest
+    rm                    remove a remote file
+    '''
+    print(help.__doc__)
+
 def Main():
-    ak = json.loads(open('.bdp.conf').read())['ak']
-    print(ak)
+    if len(sys.argv) == 1:
+        help()
+        return
+
+    search_dirs = ['/etc/.bdp.conf', 
+                   os.path.expanduser('~/.bdp.conf'), 
+                   '.bdp.conf']
+    ak = None
+    for i in search_dirs:
+        if os.path.exists(i):
+            ak = json.loads(open(i,'r').read())['ak']
+            break
+    if ak is None:
+        print("Access token not found\nsearch path: %s"%search_dirs)
+        return
+
+    #print(ak)
     cli = PCSCLI(ak)
     op = sys.argv[1]
     argv = sys.argv[2:] 
-    if op == 'ls':
+    if op == 'ls' or op == 'list':
         cli.list(argv)
-    elif op == 'dl':
+    elif op == 'get' or op == 'download':
         cli.download(argv)
     elif op == 'info':
         cli.info(argv)
-    elif op == 'upload':
+    elif op == 'put' or op == 'upload':
         cli.upload(argv)
     elif op == 'rename':
         cli.rename(argv)
-    elif op == 'remove':
+    elif op == 'rm' or op == 'remove':
         cli.remove(argv)
-    elif op == 'move':
+    elif op == 'mv' or op == 'move':
         cli.move(argv)
+    elif op == 'du':
+        cli.diskusage(argv)
+    else:
+        help()
 
 if __name__ == "__main__":
     Main()
