@@ -1,0 +1,34 @@
+{
+  "name": "bdp",
+  "version": "0.0.1",
+  "description": "netdisk nodejs cli",
+  "main": "index.js",
+  "directories": {
+    "doc": "doc"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "tsc --watch",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "bdpcmd": "./bin/bdpcmd.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/susabolca/bdp.git"
+  },
+  "author": "susabolca",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/susabolca/bdp/issues"
+  },
+  "homepage": "https://github.com/susabolca/bdp#readme",
+  "private": true,
+  "devDependencies": {
+    "@types/node": "^15.0.2"
+  },
+  "dependencies": {
+    "typescript": "^4.2.4"
+  }
+}

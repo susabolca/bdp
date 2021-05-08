@@ -1181,7 +1181,7 @@ class PCSCLI():
     def info(self, argv):
         print("access token: %s"%(self.ak))
         a = self.ak.split('.')
-        expired=int(a[3])
+        expired=0 #int(a[3])
         print("expire in: %s"%self.strftime(expired))
         rsp = self.pcs.uinfo()
         j = rsp.json()
@@ -1402,7 +1402,7 @@ def Main():
     ak = None
     for i in search_dirs:
         if os.path.exists(i):
-            ak = json.loads(open(i,'r').read())['ak']
+            ak = json.loads(open(i,'r').read())['access_token']
             break
     if ak is None:
         print("Access token not found\nsearch path: %s"%search_dirs)
